@@ -24,7 +24,7 @@ export const DeleteConfirmation = ({
         />
         <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95 duration-200">
           {/* Header with accent */}
-          <div className="bg-gradient-to-r from-blue-50 to-sky-50 px-6 py-5 border-b border-red-100">
+          <div className="bg-gradient-to-r from-blue-50 to-sky-50 px-6 py-5 border-b border-blue-100">
             <div className="flex items-start justify-between gap-4">
               <div className="flex items-start gap-3">
                 <div className="flex-shrink-0 w-10 h-10 rounded-full bg-red-100 flex items-center justify-center">
@@ -68,9 +68,11 @@ export const DeleteConfirmation = ({
                 <>
                   You are about to permanently delete{" "}
                   <span className="font-semibold text-slate-900 bg-slate-100 px-1.5 py-0.5 rounded">
-                    {target.title}
+                    {target?.title?.length > 100
+                      ? `${target.title.slice(0, 30)}...`
+                      : target?.title}
                   </span>
-                  . This conversation and all its messages will be lost forever.
+                  This conversation and all its messages will be lost forever.
                 </>
               ) : (
                 "This conversation and all its messages will be permanently deleted and cannot be recovered."

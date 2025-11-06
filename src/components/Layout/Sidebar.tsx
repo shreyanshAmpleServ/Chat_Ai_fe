@@ -96,7 +96,7 @@ export function Sidebar({
         </button>
       </div>
 
-      <nav className="flex-1 overflow-y-auto p-3 space-y-1">
+      <nav className="flex-1 overflow-y-auto p-3 space-y-1 scrollbar-transparent">
         <button
           onClick={() => onViewChange("chat")}
           className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${
@@ -114,7 +114,7 @@ export function Sidebar({
             <p className="text-xs font-medium text-slate-500 px-3 mb-2">
               Recent Chats
             </p>
-            <div className="space-y-1">
+            <div className="space-y-1 ">
               {sessions.map((session) => (
                 <div
                   key={session.id}
@@ -157,7 +157,7 @@ export function Sidebar({
       <div className="p-4 border-t border-slate-800">
         <div className="flex items-center gap-3 mb-3">
           <div className="w-9 h-9 bg-slate-800 rounded-full flex items-center justify-center">
-            <span className="text-sm font-medium">
+            <span className="text-sm font-medium capitalize">
               {user?.username?.charAt(0) || "U"}
             </span>
           </div>

@@ -174,7 +174,8 @@ export function ChatInterface({
 
   // ---- Auto-scroll on new messages ----
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    messagesEndRef.current?.scrollIntoView();
+    // messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [details, sending]);
 
   // ---- Toast helper ----

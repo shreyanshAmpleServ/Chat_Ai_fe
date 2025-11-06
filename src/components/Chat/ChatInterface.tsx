@@ -1,4 +1,10 @@
-import { useState, useEffect, useRef, useMemo, useCallback } from "react";
+import React, {
+  useState,
+  useEffect,
+  useRef,
+  useMemo,
+  useCallback,
+} from "react";
 import { Send, Loader2, Sparkles, Database } from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext";
 import { useMutation, useQuery } from "@tanstack/react-query";
@@ -9,15 +15,79 @@ import remarkGfm from "remark-gfm";
 import rehypeHighlight from "rehype-highlight";
 import "highlight.js/styles/github.css";
 
+// --- Date formatting helpers ---
+const MONTHS: Record<string, number> = {
+  jan: 1,
+  january: 1,
+  feb: 2,
+  february: 2,
+  mar: 3,
+  march: 3,
+  apr: 4,
+  april: 4,
+  may: 5,
+  jun: 6,
+  june: 6,
+  jul: 7,
+  july: 7,
+  aug: 8,
+  august: 8,
+  sep: 9,
+  sept: 9,
+  september: 9,
+  oct: 10,
+  october: 10,
+  nov: 11,
+  november: 11,
+  dec: 12,
+  december: 12,
+};
+
+function pad(n: number) {
+  return String(n).padStart(2, "0");
+}
+
+function toDDMMYYYY(y: number, m: number, d: number) {
+  return `${pad(d)}-${pad(m)}-${y}`;
+}
+
+// Replace dates in common formats with DD-MM-YYYY.
+function formatDatesInMarkdown(text: string): string {
+  let out = text;
+
+  // ISO-like 2025-11-06T... → 06-11-2025
+  out = out.replace(
+    /\b(\d{4})-(\d{2})-(\d{2})T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z?\b/g,
+    (_, y, m, d) => toDDMMYYYY(Number(y), Number(m), Number(d))
+  );
+
+  // YYYY-MM-DD → DD-MM-YYYY
+  out = out.replace(/\b(\d{4})-(\d{2})-(\d{2})\b/g, (_, y, m, d) =>
+    toDDMMYYYY(Number(y), Number(m), Number(d))
+  );
+
+  // YYYY/MM/DD → DD-MM-YYYY
+  out = out.replace(/\b(\d{4})\/(\d{1,2})\/(\d{1,2})\b/g, (_, y, m, d) =>
+    toDDMMYYYY(Number(y), Number(m), Number(d))
+  );
+
+  // "Nov 6, 2025" / "November 6, 2025" → 06-11-2025
+  out = out.replace(
+    /\b([A-Za-z]{3,9})\s+(\d{1,2}),\s*(\d{4})\b/g,
+    (_, mon, d, y) => {
+      const m = MONTHS[mon.toLowerCase()];
+      if (!m) return `${mon} ${d}, ${y}`;
+      return toDDMMYYYY(Number(y), m, Number(d));
+    }
+  );
+
+  return out;
+}
+
 interface ChatInterfaceProps {
   sessionId: string | null;
   onSessionUpdate: () => void; // parent will refetch sessions & select latest
   refetchSessions: (sessionId: any) => void; // parent will refetch sessions & select latest
-}
-interface AnswerBlockProps {
-  d: {
-    aiAnswer: string;
-  };
 }
 
 type ChatDetail = {
@@ -58,7 +128,6 @@ export function ChatInterface({
   const { user } = useAuth();
   const [input, setInput] = useState("");
   const [category, setCategory] = useState<string>("");
-  // const [toast, setToast] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // ----- Load chat details from backend -----
@@ -81,10 +150,8 @@ export function ChatInterface({
     return arr as ChatDetail[];
   }, [chatDetailsResp]);
 
-  // Reset category only when user switches to an existing session (optional)
+  // Reset category when switching to an existing session
   useEffect(() => {
-    // Keep the chosen category when starting a new chat (sessionId === null)
-    // Reset it when switching to an existing session
     if (sessionId) setCategory("");
   }, [sessionId]);
 
@@ -97,13 +164,11 @@ export function ChatInterface({
       categoryTag?: string | null;
     }) => Promise<any>,
     onSuccess: async (data) => {
-      if (sessionId) await refetchDetails(); // existing chat → reload messages
-      console.log("sendMessage onSuccess data:", data);
+      if (sessionId) await refetchDetails();
       if (sessionId === null) {
-        // new chat → refetch sessions and select latest
         refetchSessions(data?.data?.chatId);
       }
-      onSessionUpdate(); // parent will refetch sessions; if new chat, it will select it
+      onSessionUpdate();
     },
   });
 
@@ -114,25 +179,20 @@ export function ChatInterface({
 
   // ---- Toast helper ----
   const showToast = useCallback((msg: string) => {
-    // setToast(msg);
     toast.error(msg);
-    // setTimeout(() => setToast(null), 2500);
   }, []);
 
   const handleSend = useCallback(async () => {
     if (!input.trim() || !user) return;
 
-    // If it's a NEW conversation (no sessionId yet), force category selection
     if (!sessionId && !category) {
-      toast.error(
-        "Please select a category before sending your first message."
-      );
+      showToast("Please select a category before sending your first message.");
       return;
     }
 
     const payload = {
       question: input.trim(),
-      chatId: sessionId ? Number(sessionId) : undefined, // let backend create if undefined
+      chatId: sessionId ? Number(sessionId) : undefined,
       userId: user.id,
       categoryTag: category || undefined,
     };
@@ -166,9 +226,9 @@ export function ChatInterface({
           </p>
         </div>
       </div>
+
       {/* Messages area */}
       <div className="flex-1 overflow-y-auto p-6 space-y-6">
-        {/* If no session yet OR no messages in an existing session, show helpful starter */}
         {detailsLoading && (sessionId ? details.length === 0 : true) ? (
           <div className="flex justify-start">
             <div className="bg-slate-50 rounded-2xl px-6 py-4 border border-slate-200">
@@ -191,7 +251,7 @@ export function ChatInterface({
                   Get instant insights on sales, inventory, purchases, and more.
                 </p>
 
-                {/* Category quick-picks are available even before first send */}
+                {/* Category quick-picks */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
                   {categoryList.map((item) => (
                     <div
@@ -216,71 +276,89 @@ export function ChatInterface({
             </div>
           </div>
         ) : (
-          details.map((d) => (
-            <div key={d.id} className="space-y-3">
-              {/* User bubble */}
-              <div className="flex justify-end">
-                <div className="max-w-3xl rounded-2xl px-6 py-4 bg-gradient-to-r from-blue-600 to-blue-700 text-white">
-                  <p className="whitespace-pre-wrap leading-relaxed">
-                    {d.question}
-                  </p>
-                  {d.sql_code && (
-                    <div className="mt-3 pt-3 border-t border-blue-300/40">
-                      <p className="text-xs font-medium mb-2 text-blue-50">
-                        Generated SQL:
-                      </p>
-                      <code className="text-xs bg-slate-800 text-slate-100 p-2 rounded block overflow-x-auto">
-                        {d.sql_code}
-                      </code>
-                    </div>
-                  )}
+          details.map((d) => {
+            // NOTE: no hooks in here. Do simple formatting call per item.
+            const formatted = formatDatesInMarkdown(d.aiAnswer);
+
+            return (
+              <div key={d.id} className="space-y-3">
+                {/* User bubble */}
+                <div className="flex justify-end">
+                  <div className="max-w-3xl rounded-2xl px-6 py-4 bg-gradient-to-r from-blue-600 to-blue-700 text-white">
+                    <p className="whitespace-pre-wrap leading-relaxed">
+                      {d.question}
+                    </p>
+                    {d.sql_code && (
+                      <div className="mt-3 pt-3 border-t border-blue-300/40">
+                        <p className="text-xs font-medium mb-2 text-blue-50">
+                          Generated SQL:
+                        </p>
+                        <code className="text-xs bg-slate-800 text-slate-100 p-2 rounded block overflow-x-auto">
+                          {d.sql_code}
+                        </code>
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
-              {/* Assistant bubble */}
-              <div className="flex justify-start">
-                <div className="max-w-3xl rounded-2xl px-6 py-4 bg-slate-50 text-slate-800 border border-slate-200">
-                  <p className="whitespace-pre-wrap leading-relaxed">
-                    <ReactMarkdown
-                      remarkPlugins={[remarkGfm]}
-                      components={{
-                        a: (props) => (
-                          <a
-                            {...props}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-blue-600 underline"
-                          />
-                        ),
-                        code({
-                          inline,
-                          children,
-                          ...props
-                        }: {
-                          inline?: boolean;
-                          children?: React.ReactNode;
-                        }) {
-                          return inline ? (
-                            <code
-                              className="bg-gray-200 px-1 py-0.5 rounded text-sm"
+
+                {/* Assistant bubble */}
+                <div className="flex justify-start">
+                  <div className="max-w-3xl rounded-2xl px-6 py-4 bg-slate-50 text-slate-800 border border-slate-200">
+                    {/* Use a div/article, not <p>, to host block markdown */}
+                    <article className="prose prose-slate max-w-none md-scroll">
+                      <ReactMarkdown
+                        remarkPlugins={[remarkGfm]}
+                        rehypePlugins={[rehypeHighlight]}
+                        components={{
+                          table: (props) => (
+                            <table className="md-table" {...props} />
+                          ),
+                          thead: (props) => (
+                            <thead className="md-thead" {...props} />
+                          ),
+                          tbody: (props) => (
+                            <tbody className="md-tbody" {...props} />
+                          ),
+                          tr: (props) => <tr className="md-tr" {...props} />,
+                          th: (props) => <th className="md-th" {...props} />,
+                          td: (props) => <td className="md-td" {...props} />,
+                          a: (props) => (
+                            <a
                               {...props}
-                            >
-                              {children}
-                            </code>
-                          ) : (
-                            <pre className="bg-gray-900 text-gray-100 p-3 rounded-lg overflow-x-auto text-sm">
-                              <code {...props}>{children}</code>
-                            </pre>
-                          );
-                        },
-                      }}
-                    >
-                      {d.aiAnswer}
-                    </ReactMarkdown>
-                  </p>
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="md-link"
+                            />
+                          ),
+                          // keep types simple to avoid TS noise; adjust if you enforce strict types
+                          code({
+                            inline,
+                            children,
+                            ...props
+                          }: {
+                            inline?: boolean;
+                            children?: React.ReactNode;
+                          } & any) {
+                            return inline ? (
+                              <code className="md-code-inline" {...props}>
+                                {children}
+                              </code>
+                            ) : (
+                              <pre className="md-code-block">
+                                <code {...props}>{children}</code>
+                              </pre>
+                            );
+                          },
+                        }}
+                      >
+                        {formatted}
+                      </ReactMarkdown>
+                    </article>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))
+            );
+          })
         )}
 
         {sending && (
@@ -295,10 +373,10 @@ export function ChatInterface({
         )}
         <div ref={messagesEndRef} />
       </div>
+
       {/* Composer */}
       <div className="border-t border-slate-200 bg-white p-6">
         <div className="max-w-4xl mx-auto">
-          {/* If no session yet, show the chosen category (and allow changing) near the input */}
           {!sessionId && (
             <div className="mb-3 flex flex-wrap gap-2">
               {categoryList.map((item) => (
@@ -349,12 +427,6 @@ export function ChatInterface({
           </p>
         </div>
       </div>
-
-      {/* {toast && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-sm px-4 py-2 rounded-lg shadow-lg">
-          {toast}
-        </div>
-      )} */}
     </div>
   );
 }

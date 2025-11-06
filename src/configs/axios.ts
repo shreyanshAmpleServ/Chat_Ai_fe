@@ -12,8 +12,8 @@ import axios, {
  */
 // const baseURL: string = "https://ticketing_app_api.dcctz.com/api/v1/";
 
-const baseURL: string = "https://chatbot_api.dcctz.com/api/v1/";
-// const baseURL: string = "http://localhost:5000/api/v1/";
+// const baseURL: string = "https://chatbot_api.dcctz.com/api/v1/";
+const baseURL: string = "http://localhost:5000/api/v1/";
 
 /**
  * Creates and configures an Axios instance with baseURL and request/response interceptors.

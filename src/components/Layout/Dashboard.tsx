@@ -98,7 +98,7 @@ export function Dashboard() {
     setCurrentSessionId(null); // ChatInterface will treat this as "create new on send"
   }, []);
 
-  console.log("Rendering Dashboard with currentSessionId:", currentSessionId);
+  // console.log("Rendering Dashboard with currentSessionId:", currentSessionId);
   // --- When backend creates/updates a chat, refresh sessions & hide draft ---
   const handleSessionUpdate = useCallback(
     async (sessionId?: number) => {

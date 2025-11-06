@@ -14,6 +14,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import rehypeHighlight from "rehype-highlight";
 import "highlight.js/styles/github.css";
+import aiva from "../../assets/aiva.png";
 
 // --- Date formatting helpers ---
 const MONTHS: Record<string, number> = {
@@ -213,13 +214,14 @@ export function ChatInterface({
       {/* Header */}
       <div className="border-b flex gap-3 border-slate-200 bg-white px-6 py-4">
         <div className="flex items-center gap-3">
-          <div className="bg-gradient-to-r from-blue-600 to-blue-700 p-2 rounded-lg">
-            <Database className="w-5 h-5 text-white" />
-          </div>
+          {/* <div className="bg-gradient-to-r from-blue-600 to-blue-700 p-2 rounded-lg"> */}
+          {/* <Database className="w-5 h-5 text-white" /> */}
+          <img src={aiva} alt="Aiva Logo" className="w-10 h-10 rounded-lg" />
+          {/* </div> */}
         </div>
         <div>
           <h1 className="text-lg font-semibold text-slate-800">
-            SAP Business One Assistant
+            DCC Enterprise Aiva AI Assistant
           </h1>
           <p className="text-sm text-slate-500">
             Ask anything about your enterprise data

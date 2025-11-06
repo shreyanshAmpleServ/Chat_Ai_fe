@@ -52,3 +52,11 @@ export const askQuestionFn = async (body: any) => {
     throw error;
   }
 };
+export const deleteChatHistoryFn = async (id: any) => {
+  try {
+    const response = await axiosInstance.delete("/chat-history/" + id);
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};

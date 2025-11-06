@@ -4,11 +4,20 @@ import { useAuth } from "../../contexts/AuthContext";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { askQuestionFn, chatDetailFn } from "../../services/chatHistory";
 import toast from "react-hot-toast";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import rehypeHighlight from "rehype-highlight";
+import "highlight.js/styles/github.css";
 
 interface ChatInterfaceProps {
   sessionId: string | null;
   onSessionUpdate: () => void; // parent will refetch sessions & select latest
   refetchSessions: (sessionId: any) => void; // parent will refetch sessions & select latest
+}
+interface AnswerBlockProps {
+  d: {
+    aiAnswer: string;
+  };
 }
 
 type ChatDetail = {
@@ -231,7 +240,42 @@ export function ChatInterface({
               <div className="flex justify-start">
                 <div className="max-w-3xl rounded-2xl px-6 py-4 bg-slate-50 text-slate-800 border border-slate-200">
                   <p className="whitespace-pre-wrap leading-relaxed">
-                    {d.aiAnswer}
+                    <ReactMarkdown
+                      remarkPlugins={[remarkGfm]}
+                      components={{
+                        a: (props) => (
+                          <a
+                            {...props}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-blue-600 underline"
+                          />
+                        ),
+                        code({
+                          inline,
+                          children,
+                          ...props
+                        }: {
+                          inline?: boolean;
+                          children?: React.ReactNode;
+                        }) {
+                          return inline ? (
+                            <code
+                              className="bg-gray-200 px-1 py-0.5 rounded text-sm"
+                              {...props}
+                            >
+                              {children}
+                            </code>
+                          ) : (
+                            <pre className="bg-gray-900 text-gray-100 p-3 rounded-lg overflow-x-auto text-sm">
+                              <code {...props}>{children}</code>
+                            </pre>
+                          );
+                        },
+                      }}
+                    >
+                      {d.aiAnswer}
+                    </ReactMarkdown>
                   </p>
                 </div>
               </div>

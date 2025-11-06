@@ -58,7 +58,7 @@ export function LoginPage() {
               </div>
             </div>
             <h1 className="text-2xl font-bold text-center mb-2">
-              Enterprise AI Assistant
+              DCC Enterprise AI Assistant
             </h1>
             <p className="text-blue-100 text-center text-sm">
               SAP Business One Intelligence Platform

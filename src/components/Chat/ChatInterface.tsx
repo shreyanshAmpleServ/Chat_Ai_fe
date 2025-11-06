@@ -81,14 +81,6 @@ function formatDatesInMarkdown(text: string): any {
       return toDDMMYYYY(Number(y), m, Number(d));
     }
   );
-  // const isEmpty =
-  //   out.trim() === "|  |\n|---|\n| None |" ||
-  //   out.trim().toLowerCase().includes("none");
-
-  // if (isEmpty) {
-  //   return "I'm sorry, but there is no relevant data available to answer your question.";
-  // }
-
   return out;
 }
 

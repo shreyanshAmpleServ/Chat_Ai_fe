@@ -53,7 +53,7 @@ function toDDMMYYYY(y: number, m: number, d: number) {
 }
 
 // Replace dates in common formats with DD-MM-YYYY.
-function formatDatesInMarkdown(text: string): string {
+function formatDatesInMarkdown(text: string): any {
   let out = text;
 
   // ISO-like 2025-11-06T... → 06-11-2025
@@ -81,6 +81,13 @@ function formatDatesInMarkdown(text: string): string {
       return toDDMMYYYY(Number(y), m, Number(d));
     }
   );
+  // const isEmpty =
+  //   out.trim() === "|  |\n|---|\n| None |" ||
+  //   out.trim().toLowerCase().includes("none");
+
+  // if (isEmpty) {
+  //   return "I'm sorry, but there is no relevant data available to answer your question.";
+  // }
 
   return out;
 }

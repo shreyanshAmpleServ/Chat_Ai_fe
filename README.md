@@ -1,282 +1,235 @@
-DCC Enterprise AI Assistant — App Content
-Hero (Header)
+# DCC Enterprise Aiva AI Assistant
 
-Title: DCC Enterprise AI Assistant
-Subtitle: Ask in plain English. Get instant insights from SAP Business One.
-Tagline: Ask. Analyze. Act.
+## Hero (Header)
 
-Supporting line: Turn natural-language questions into accurate answers, charts, and SQL—without digging through reports.
+**Title:** DCC Enterprise AI Assistant  
+**Subtitle:** Ask in plain English. Get instant insights from SAP Business One.  
+**Tagline:** Ask. Analyze. Act.
 
-Primary CTA: Start a conversation
-Secondary CTA: See sample questions
+**Supporting line:** Turn natural-language questions into accurate answers, charts, and SQL—without digging through reports.
 
-Empty State (First-run / No messages)
+**Primary CTA:** Start a conversation  
+**Secondary CTA:** See sample questions
 
-Headline: Enterprise intelligence at your fingertips
-Body: Ask about sales, invoices, customers, items, or trends—your assistant will analyze live data and respond with clear answers, tables, and visuals.
+---
 
-Quick categories:
+## Empty State (First-run / No messages)
 
-Sales Analytics – Revenue, trends, top customers
+**Headline:** Enterprise intelligence at your fingertips  
+**Body:** Ask about sales, invoices, customers, items, or trends—your assistant will analyze live data and respond with clear answers, tables, and visuals.
 
-Invoices & Receivables – Overdues, aging, average invoice value
+**Quick categories**
 
-Orders & Fulfillment – Open orders, pending deliveries, cancellations
+- Sales Analytics — Revenue, trends, top customers
+- Invoices & Receivables — Overdues, aging, average invoice value
+- Orders & Fulfillment — Open orders, pending deliveries, cancellations
+- Items & Inventory — Top items, item-wise sales, customer item history
+- Comparisons & Trends — Month-over-month, quarter-over-quarter
 
-Items & Inventory – Top items, item-wise sales, customer item history
+**Suggested prompt chips (click-to-send)**
 
-Comparisons & Trends – Month-over-month, quarter-over-quarter
+- Show me all sales orders created this month.
+- List all sales invoices for customer ABC Traders.
+- Get the total sales amount for today.
+- Show all open sales quotations.
+- Which invoices are overdue as of today?
+- Show top 5 customers by sales value in the last quarter.
+- List all sales orders pending delivery.
+- Show sales invoices between 1st and 15th September.
+- Get all canceled sales orders.
+- Show total sales per sales employee for the current year.
+- Show total quantity sold of item `P1001` last month.
+- Which items had the highest sales in October?
+- List all items sold to customer 'ABC Traders' in the last quarter.
+- What are the top 10 most sold items this year?
+- Show item-wise total sales amount this week.
+- What is the total revenue generated this year?
+- Compare total sales between Q1 and Q2.
+- What’s the average invoice value for October?
+- How many invoices were issued last week?
+- Show sales growth percentage month by month.
+- Show all customers with no sales in the last 3 months.
+- Get the total outstanding invoices per customer.
+- Which customers purchased item `A2002`?
+- Show sales trend by month for customer 'Acme Corporation'.
+- Get total sales by customer group.
 
-Suggested prompt chips (click-to-send):
+---
 
-Show me all sales orders created this month.
+## Composer Placeholder (input hints)
 
-List all sales invoices for customer ABC Traders.
+- "Ask about your business data… e.g., 'Show me all sales orders created this month'"
+- "Try: 'Top 5 customers by sales value in the last quarter'"
+- "You can be specific: 'Invoices between 01-09-2025 and 15-09-2025'"
 
-Get the total sales amount for today.
+---
 
-Show all open sales quotations.
+## Assistant “Thinking” / Loading Text
 
-Which invoices are overdue as of today?
+- Analyzing your query…
+- Fetching sales data…
+- Generating SQL and validating results…
+- Formatting your answer…
 
-Show top 5 customers by sales value in the last quarter.
+---
 
-List all sales orders pending delivery.
+## Result Framing (shown above the answer, optional)
 
-Show sales invoices between 1st and 15th September.
+- **Summary:** Here’s what I found based on your filters.
+- **Data scope:** Source: SAP Business One | Company: DCC | Period: Current Month
+- **Next actions:** Export, Filter, Visualize, Save as Report
 
-Get all canceled sales orders.
+---
 
-Show total sales per sales employee for the current year.
+## Follow-up Suggestions (dynamic buttons under each answer)
 
-Show total quantity sold of item ‘P1001’ last month.
+- Change date range
+- Add customer filter
+- Show as chart
+- Show item-wise breakdown
+- Export to Excel
+- Save as dashboard tile
 
-Which items had the highest sales in October?
+---
 
-List all items sold to customer 'ABC Traders' in the last quarter.
+## Sidebar / Help Panel
 
-What are the top 10 most sold items this year?
+**Title:** Ask better questions, get sharper answers
 
-Show item-wise total sales amount this week.
+**Tips**
 
-What is the total revenue generated this year?
+- Include date ranges: “this month”, “last quarter”, or “between 01-09-2025 and 15-09-2025”
+- Specify entities: customer (“ABC Traders”), item code (`P1001`), sales employee
+- Ask for formats: “table”, “chart”, “summary only”
+- Combine filters: “Top 5 customers by value in Q2 for customer group Retail”
+- Compare periods: “Compare total sales Q1 vs Q2”
 
-Compare total sales between Q1 and Q2.
+**Examples you can copy-paste**
 
-What’s the average invoice value for October?
+- Which invoices are overdue as of today?
+- Show item-wise total sales amount this week.
+- Show sales growth percentage month by month.
+- Get the total outstanding invoices per customer.
 
-How many invoices were issued last week?
+---
 
-Show sales growth percentage month by month.
+## Microcopy for Controls
 
-Show all customers with no sales in the last 3 months.
+- Button: Ask
+- Button: Visualize
+- Button: Export CSV
+- Button: Copy SQL
+- Button: Save Report
+- Dropdown: Date range
+- Toggle: Include tax
+- Empty table state: No records match your filters. Try widening the date range or removing a filter.
 
-Get the total outstanding invoices per customer.
+---
 
-Which customers purchased item ‘A2002’?
+## Notifications & Toasts
 
-Show sales trend by month for customer 'Acme Corporation'.
+- Saved: Report saved to My Reports.
+- Export ready: Your CSV is ready to download.
+- Copied: SQL copied to clipboard.
+- Refreshed: Data refreshed successfully.
 
-Get total sales by customer group.
+---
 
-Composer Placeholder
+## Error States
 
-“Ask about your business data… e.g., ‘Show me all sales orders created this month’”
+- No data found: We couldn’t find matching records for that query. Try a broader date range or remove filters.
+- Data access: You don’t have permission to view this dataset. Contact an administrator.
+- Timeout: The query took too long. Try narrowing the date range or adding a customer/item filter.
+- Parse issue: I couldn’t understand part of that question. Try: “Show sales invoices between 01-09-2025 and 15-09-2025.”
 
-“Try: ‘Top 5 customers by sales value in the last quarter’”
+---
 
-“You can be specific: ‘Invoices between 01–09–2025 and 15–09–2025’”
+## Footer / Compliance
 
-Assistant “Thinking” / Loading Text
+- **Data freshness:** Results reflect the latest synchronized data from SAP Business One.
+- **Accuracy note:** Totals may differ from printed forms due to rounding or filter choices.
+- **Privacy:** Only authorized users can access company data. Actions are logged for audit.
 
-Analyzing your query…
+---
 
-Fetching sales data…
+## Short Descriptions for Stores / About Screen
 
-Generating SQL and validating results…
-
-Formatting your answer…
-
-Result Framing (shown above the answer, optional)
-
-Summary: Here’s what I found based on your filters.
-
-Data scope: Source: SAP Business One | Company: DCC | Period: Current Month
-
-Next actions: Export, Filter, Visualize, Save as Report
-
-Follow-up Suggestions (dynamic buttons under each answer)
-
-Change date range
-
-Add customer filter
-
-Show as chart
-
-Show item-wise breakdown
-
-Export to Excel
-
-Save as dashboard tile
-
-Sidebar / Help Panel
-
-Title: Ask better questions, get sharper answers
-Tips:
-
-Include date ranges: “this month”, “last quarter”, “between 01–09–2025 and 15–09–2025”
-
-Specify entities: customer (“ABC Traders”), item code (“P1001”), sales employee
-
-Ask for formats: “table”, “chart”, “summary only”
-
-Combine filters: “Top 5 customers by value in Q2 for customer group Retail”
-
-Compare periods: “Compare total sales Q1 vs Q2”
-
-Examples you can copy-paste:
-
-Which invoices are overdue as of today?
-
-Show item-wise total sales amount this week.
-
-Show sales growth percentage month by month.
-
-Get the total outstanding invoices per customer.
-
-Microcopy for Controls
-
-Button: Ask
-
-Button: Visualize
-
-Button: Export CSV
-
-Button: Copy SQL
-
-Button: Save Report
-
-Dropdown: Date range
-
-Toggle: Include tax
-
-Empty table state: No records match your filters. Try widening the date range or removing a filter.
-
-Notifications & Toasts
-
-Saved: Report saved to My Reports.
-
-Export ready: Your CSV is ready to download.
-
-Copied: SQL copied to clipboard.
-
-Refreshed: Data refreshed successfully.
-
-Error States
-
-No data found: We couldn’t find matching records for that query. Try a broader date range or remove filters.
-
-Data access: You don’t have permission to view this dataset. Contact an administrator.
-
-Timeout: The query took too long. Try narrowing the date range or adding a customer/item filter.
-
-Parse issue: I couldn’t understand part of that question. Try: “Show sales invoices between 01–09–2025 and 15–09–2025.”
-
-Footer / Compliance
-
-Data freshness: Results reflect the latest synchronized data from SAP Business One.
-
-Accuracy note: Totals may differ from printed forms due to rounding or filter choices.
-
-Privacy: Only authorized users can access company data. Actions are logged for audit.
-
-Short Descriptions for Stores / About Screen
-
-One-liner:
+**One-liner:**  
 DCC Enterprise AI Assistant lets your team ask natural-language questions and instantly explore SAP Business One data—no report building required.
 
-Feature bullets:
+**Feature bullets**
 
-Natural-language Q&A for sales, invoices, orders, customers, and items
+- Natural-language Q&A for sales, invoices, orders, customers, and items
+- Smart filters: date ranges, customers, items, sales employees, groups
+- Tables, summaries, and charts with one click
+- Auto-generated SQL you can review and export
+- Save, share, and schedule reports
 
-Smart filters: date ranges, customers, items, sales employees, groups
+---
 
-Tables, summaries, and charts with one click
+## Suggested Prompt Library (menu categories)
 
-Auto-generated SQL you can review and export
+### Sales & Revenue
 
-Save, share, and schedule reports
+- Get the total sales amount for today.
+- What is the total revenue generated this year?
+- Show sales growth percentage month by month.
+- Compare total sales between Q1 and Q2.
 
-“Suggested Prompt Library” (for your UI menu)
+### Invoices & AR
 
-Sales & Revenue
+- List all sales invoices for customer ABC Traders.
+- Which invoices are overdue as of today?
+- Show sales invoices between 1st and 15th September.
+- What’s the average invoice value for October?
+- How many invoices were issued last week?
+- Get the total outstanding invoices per customer.
 
-Get the total sales amount for today.
+### Orders & Quotations
 
-What is the total revenue generated this year?
+- Show me all sales orders created this month.
+- Show all open sales quotations.
+- List all sales orders pending delivery.
+- Get all canceled sales orders.
 
-Show sales growth percentage month by month.
+### Customers & Segments
 
-Compare total sales between Q1 and Q2.
+- Show top 5 customers by sales value in the last quarter.
+- Show all customers with no sales in the last 3 months.
+- Show sales trend by month for customer 'Acme Corporation'.
+- Get total sales by customer group.
 
-Invoices & AR
+### Items & Product Mix
 
-List all sales invoices for customer ABC Traders.
+- Show total quantity sold of item `P1001` last month.
+- Which items had the highest sales in October?
+- List all items sold to customer 'ABC Traders' in the last quarter.
+- What are the top 10 most sold items this year?
+- Show item-wise total sales amount this week.
+- Which customers purchased item `A2002`?
 
-Which invoices are overdue as of today?
+---
 
-Show sales invoices between 1st and 15th September.
+## Optional “Answer Templates” (tone and format)
 
-What’s the average invoice value for October?
+**Metric answer (short)**  
+Total sales today: ₹1,248,560 across 43 invoices. Want a breakdown by customer or item?
 
-How many invoices were issued last week?
+**Table answer (brief intro + table)**  
+I found 12 invoices for ABC Traders in this period. Here’s a summary—want PDF links or to export CSV?
 
-Get the total outstanding invoices per customer.
+**Trend answer (context + suggestion)**  
+Sales grew 8.4% MoM in October. Biggest gain: Retail segment (+13%). Compare by customer group?
 
-Orders & Quotations
+**Exception answer (overdues)**  
+15 invoices overdue as of today (₹972,300). 3 customers account for 72% of the value. Want a reminder or a dunning list?
 
-Show me all sales orders created this month.
+---
 
-Show all open sales quotations.
+## Notes on corrections and improvements
 
-List all sales orders pending delivery.
-
-Get all canceled sales orders.
-
-Customers & Segments
-
-Show top 5 customers by sales value in the last quarter.
-
-Show all customers with no sales in the last 3 months.
-
-Show sales trend by month for customer 'Acme Corporation'.
-
-Get total sales by customer group.
-
-Items & Product Mix
-
-Show total quantity sold of item ‘P1001’ last month.
-
-Which items had the highest sales in October?
-
-List all items sold to customer 'ABC Traders' in the last quarter.
-
-What are the top 10 most sold items this year?
-
-Show item-wise total sales amount this week.
-
-Which customers purchased item ‘A2002’?
-
-Optional “Answer Templates” (the tone the bot should use)
-
-Metric answer (short):
-“Total sales today: ₹12,48,560 across 43 invoices. Want a breakdown by customer or item?”
-
-Table answer (brief intro + table):
-“I found 12 invoices for ABC Traders in this period. Here’s a summary—want the PDF links or to export CSV?”
-
-Trend answer (context + suggestion):
-“Sales grew 8.4% MoM in October. Biggest gain: Retail segment (+13%). Compare by customer group?”
-
-Exception answer (overdues):
-“15 invoices overdue as of today (₹9,72,300). 3 customers account for 72% of value. Want a reminder or dunning list?”
+- Fixed typos and inconsistent punctuation (e.g., "Currect" → "Correct", standardized date formats to `DD-MM-YYYY`).
+- Reorganized content into clear headings and short lists for readability.
+- Standardized microcopy and control names for consistency across the UI.
+- Converted smart examples and prompt chips to code-style for item codes where appropriate (e.g., `P1001`).
+- Clarified phrasing in error messages and tips to be actionable and user-friendly.

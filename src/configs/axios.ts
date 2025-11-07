@@ -11,7 +11,9 @@ import axios, {
  */
 // const baseURL: string = "https://ticketing_app_api.dcctz.com/api/v1/";
 
-const baseURL: string = "https://chatbot_api.dcctz.com/api/v1/";
+const baseURL =
+  (import.meta as any).env?.VITE_API_BASE_URL ||
+  "https://chatbot_api.dcctz.com/api/v1/";
 // const baseURL: string = (import.meta as any).env?.API_BASE_URL || "http://localhost:5000/api/v1/";
 // console.log("API Base URL:", (import.meta as any).env?.API_BASE_URL);
 /**
@@ -25,8 +27,13 @@ const createAxiosInstance = (baseURL: string): AxiosInstance => {
   // Request interceptor
   instance.interceptors.request.use(
     (config: InternalAxiosRequestConfig<any>) => {
-      const Authorization = "Bearer " + localStorage.getItem("auth_token");
-      config.headers.set("Authorization", Authorization);
+      const token = localStorage.getItem("auth_token");
+      if (token) {
+        config.headers = config.headers || {};
+        (config.headers as Record<string, string>)[
+          "Authorization"
+        ] = `Bearer ${token}`;
+      }
       return config;
     },
 
@@ -37,25 +44,29 @@ const createAxiosInstance = (baseURL: string): AxiosInstance => {
   instance.interceptors.response.use(
     (response: AxiosResponse) => response,
     async (error: AxiosError) => {
-      // if (error.response?.status === 401) {
-      //   // Clear all stored auth data
-      //   localStorage.removeItem("auth_token");
-      //   localStorage.removeItem("user");
-      //   // localStorage.clear();
-      //   window.location.href = "/login";
-      //   return Promise.reject({
-      //     status: 401,
-      //     message: "Session expired. Please login again.",
-      //   });
-      // }
+      if (error.response?.status === 401) {
+        // Clear all stored auth data
+        localStorage.removeItem("auth_token");
+        localStorage.removeItem("user");
+        // localStorage.clear();
+        window.location.href = "/login";
+        return Promise.reject({
+          status: 401,
+          message: "Session expired. Please login again.",
+        });
+      }
       // Handle 403 Forbidden - User doesn't have permission
-      // if (error.response?.status === 403) {
-      //   console.error("Access Forbidden:", error.response.data);
-      //   return Promise.reject({
-      //     status: 403,
-      //     message: "You do not have permission to access this resource.",
-      //   });
-      // }
+      if (error.response?.status === 403) {
+        localStorage.removeItem("auth_token");
+        localStorage.removeItem("user");
+        // localStorage.clear();
+        window.location.href = "/login";
+        // console.error("Access Forbidden:", error.response.data);
+        return Promise.reject({
+          status: 403,
+          message: "You do not have permission to access this resource.",
+        });
+      }
       // Handle 404 Not Found
       if (error.response?.status === 404) {
         return Promise.reject({

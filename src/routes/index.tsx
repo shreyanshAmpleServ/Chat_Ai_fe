@@ -4,6 +4,7 @@ import { LoginPage } from "../components/Auth/LoginPage";
 import { Dashboard } from "../components/Layout/Dashboard";
 import ProtectedRoute from "../components/ProtectedRoute";
 import Layout from "../components/Layout";
+import PublicRoute from "../components/PublicRoute";
 
 interface RouteType {
   path: string;
@@ -20,13 +21,13 @@ interface RouteType {
  */
 const routes: RouteType[] = [
   // Public Routes
-  {
-    path: "/login",
-    element: <LoginPage />,
-    title: "Login",
-    status: true,
-    requiresAuth: false,
-  },
+  // {
+  //   path: "/login",
+  //   element: <LoginPage />,
+  //   title: "Login",
+  //   status: true,
+  //   requiresAuth: false,
+  // },
 
   {
     path: "/dashboard",
@@ -44,9 +45,9 @@ const Routers = () => {
       <Route
         path="/login"
         element={
-          <LoginPage />
-          // <PublicRoute>
-          // </PublicRoute>
+          <PublicRoute>
+            <LoginPage />
+          </PublicRoute>
         }
       />
       {/* Protected Routes with Layout */}
@@ -61,8 +62,8 @@ const Routers = () => {
           <Route
             key={route.path}
             path={route.path}
-            element={route.element}
-            // element={<ProtectedRoute>{route.element}</ProtectedRoute>}
+            // element={route.element}
+            element={<ProtectedRoute>{route.element}</ProtectedRoute>}
           />
         ))}
       </Route>

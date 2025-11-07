@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { LogIn, Building2, Loader2 } from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext";
+import aiva from "../../assets/aiva.png";
+import aivaLight from "../../assets/aiva-light.png";
 
 export function LoginPage() {
   const [isLogin, setIsLogin] = useState(true);
@@ -53,9 +55,23 @@ export function LoginPage() {
         <div className="bg-white rounded-2xl shadow-xl border border-slate-200 overflow-hidden backdrop-blur-sm">
           <div className="bg-gradient-to-r from-blue-600 to-blue-700 p-8 text-white">
             <div className="flex items-center justify-center mb-4">
-              <div className="bg-white/10 backdrop-blur-sm p-3 rounded-xl">
+              {/* <div className="bg-white/10 backdrop-blur-sm p-3 rounded-xl">
                 <Building2 className="w-8 h-8" />
+              </div> */}
+              <div className="bg-white/90  p-1 rounded-lg">
+                <img
+                  src={aivaLight}
+                  alt="Aiva Logo"
+                  className="w-12 h-12 rounded-full"
+                />
               </div>
+              {/* <div className="bg-white/90  p-1 rounded-lg">
+                <img
+                  src="https://demo.dcclogsuite.com/ng/1.1/assets/images/ai_logo.png"
+                  alt="Logo"
+                  className="w-10 h-10"
+                />
+              </div> */}
             </div>
             <h1 className="text-2xl font-bold text-center mb-2">
               DCC Enterprise AI Assistant
@@ -175,13 +191,13 @@ export function LoginPage() {
               </button>
             </form>
 
-            {isLogin && (
+            {/* {isLogin && (
               <div className="mt-4 text-center">
                 <button className="text-sm text-blue-600 hover:text-blue-700 font-medium">
                   Forgot password?
                 </button>
               </div>
-            )}
+            )} */}
           </div>
         </div>
 

@@ -43,9 +43,38 @@
   text-decoration: underline;
 }
 
+/* Make header sticky inside the scrolling region */
+.md-table thead th.md-th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+/* Let the table be wider than the viewport so it can scroll */
+.md-table {
+  width: auto;
+  /* min-width: 640px; force horizontal scroll on very small screens */
+  table-layout: auto; /* better natural sizing for mixed content */
+}
+
+/* Improve wrapping so long tokens (like codes/URLs) don’t blow layout */
+.md-th,
+.md-td {
+  white-space: normal;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+
+/* Keep code blocks inside cells from expanding the row too much */
+.md-td pre,
+.md-td code {
+  /* max-width: 100%; */
+}
+
+/* --- Your original styles (kept) --- */
+
 /* Table base */
 .md-table {
-  width: 100%;
   border-collapse: separate;
   border-spacing: 0;
   margin: 1rem 0;
@@ -92,15 +121,95 @@
   background: #f6faff;
 }
 
-/* Make numeric columns align right if the content is numeric */
-.md-td,
-.md-th {
-  /* If you want auto numeric alignment, uncomment below:
-  text-align: match-parent;
-  */
+/* Keep app within viewport width */
+html,
+body,
+#root {
+  width: 100%;
+  max-width: 100vw;
+  overflow-x: hidden;
 }
 
-/* Code styling */
+/* Images inside markdown should never exceed the container width */
+.prose img,
+.md-img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
+
+/* === Responsive wrapper so tables scroll on small screens === */
+.md-table-wrap {
+  width: 100%;
+  max-height: 90vh;
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 0.25rem; /* breathing room for scrollbars */
+}
+
+/* Table base */
+.md-table {
+  width: 100%;
+  /* min-width: 640px; forces horizontal scroll on narrow screens */
+  border-collapse: separate;
+  border-spacing: 0;
+  margin: 1rem 0;
+  background: #ffffff;
+  border: 1px solid #e5e7eb; /* slate-200-ish */
+  border-radius: 0.75rem; /* rounded-xl */
+  overflow: hidden; /* clip rounded corners */
+  table-layout: auto;
+}
+
+/* Header */
+.md-thead th.md-th {
+  background: #f1f5f9; /* slate-100 */
+  font-weight: 500;
+  text-align: left;
+  padding: 0.75rem 0.8rem;
+  border-bottom: 1px solid #e5e7eb;
+  font-size: 0.87rem;
+  white-space: nowrap;
+  position: sticky; /* keeps head visible while horizontal scroll */
+  top: 0;
+  z-index: 1;
+}
+
+/* Body rows */
+.md-tbody .md-tr:nth-child(odd) {
+  background: #fafafa;
+}
+.md-tbody .md-tr:nth-child(even) {
+  background: #ffffff;
+}
+
+/* Cells */
+.md-td {
+  padding: 0.5rem 0.6rem;
+  border-bottom: 1px solid #eee;
+  vertical-align: top;
+  font-size: 0.8rem;
+}
+
+/* Last row: remove bottom border */
+.md-tbody .md-tr:last-child .md-td {
+  border-bottom: none;
+}
+
+/* Hover row */
+.md-tbody .md-tr:hover {
+  background: #f6faff;
+}
+
+/* Prevent long tokens (URLs/code) from blowing layout */
+.md-th,
+.md-td {
+  white-space: normal;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+
+/* Inline code */
 .md-code-inline {
   background: #e5e7eb; /* slate-200 */
   padding: 0.1rem 0.35rem;
@@ -110,6 +219,7 @@
   font-size: 0.875em;
 }
 
+/* Code block */
 .md-code-block {
   background: #0f172a; /* slate-900 */
   color: #f8fafc; /* slate-50 */
@@ -118,14 +228,22 @@
   overflow: auto;
   line-height: 1.5;
   margin: 0.75rem 0;
+  max-width: 100%; /* never exceed container */
 }
 
-/* Make table responsive on small screens */
+/* === Mobile tweaks === */
 @media (max-width: 640px) {
+  .md-table {
+    /* width: 100%; */
+    width: auto;
+  }
   .md-th,
   .md-td {
-    padding: 0.625rem 0.75rem;
-    font-size: 0.9rem;
+    padding: 0.4rem 0.8rem;
+    font-size: 0.85rem;
+  }
+  .md-thead th.md-th {
+    font-size: 0.85rem;
   }
 }
 

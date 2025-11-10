@@ -14,7 +14,8 @@ import axios, {
 const baseURL =
   (import.meta as any).env?.VITE_API_BASE_URL ||
   "https://chatbot_api.dcctz.com/api/v1/";
-// const baseURL: string = (import.meta as any).env?.API_BASE_URL || "http://localhost:5000/api/v1/";
+// const baseURL: string =
+//   (import.meta as any).env?.API_BASE_URL || "http://localhost:5000/api/v1/";
 // console.log("API Base URL:", (import.meta as any).env?.API_BASE_URL);
 /**
  * Creates and configures an Axios instance with baseURL and request/response interceptors.

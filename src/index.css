@@ -236,6 +236,7 @@ body,
   .md-table {
     /* width: 100%; */
     width: auto;
+    margin: 0;
   }
   .md-th,
   .md-td {

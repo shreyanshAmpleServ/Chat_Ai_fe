@@ -381,11 +381,11 @@ export function ChatInterface({
 
                 {/* Assistant bubble */}
                 <div className="flex justify-start">
-                  <div className="relative max-w-3xl  min-w-0 rounded-2xl px-3 py-3  bg-slate-50 text-slate-800 border border-slate-200">
+                  <div className="relative max-w-3xl  min-w-0 rounded-2xl lg:px-3 lg:py-3  bg-slate-50 text-slate-800 border-2xl lg:border border-slate-200">
                     {/* Copy whole answer */}
                     <button
                       onClick={() => copyToClipboard(d.aiAnswer, answerCopyKey)}
-                      className="absolute right-4 bottom-3 inline-flex items-center gap-1 hover:rounded-md hover:border hover:border-slate-300 hover:bg-white/80 px-2 py-1 text-xs text-slate-600 hover:bg-white hover:shadow-sm"
+                      className="absolute right-4 bottom-2 lg:bottom-3 inline-flex items-center gap-1 hover:rounded-md hover:border hover:border-slate-300 hover:bg-white/80 px-2 py-1 text-xs text-slate-600 hover:bg-white hover:shadow-sm"
                       title="Copy answer"
                       type="button"
                     >
@@ -458,8 +458,8 @@ export function ChatInterface({
                     </div>
 
                     {/* time */}
-                    <div className="mt-3 flex items-center gap-2 text-slate-500 text-xs">
-                      <Clock className="w-3.5 h-3.5" />
+                    <div className="mb-3 lg:mb-0 mt-3 lg:mt-0 flex items-center gap-2 text-slate-500 text-xs">
+                      <Clock className="w-3.5 ml-2 h-3.5" />
                       <span>{aiTime}</span>
                     </div>
                   </div>

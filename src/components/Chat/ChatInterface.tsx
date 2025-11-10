@@ -257,7 +257,7 @@ export function ChatInterface({
   return (
     <div className="h-full flex flex-col bg-white relative w-full max-w-[100vw] overflow-x-hidden">
       {/* Header */}
-      <div className="border-b flex gap-3 border-slate-200 bg-white px-4 md:px-6 py-3 md:py-4 sticky top-0 z-10">
+      <div className=" border-b lg:flex hidden  gap-3 border-slate-200 bg-white px-4 md:px-6 py-3 md:py-4 sticky top-0 z-10">
         <div className="flex items-center gap-3">
           <img
             src={aiva}

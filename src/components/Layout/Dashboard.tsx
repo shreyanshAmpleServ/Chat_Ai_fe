@@ -115,7 +115,7 @@ export function Dashboard() {
   );
 
   return (
-    <div className="flex h-screen bg-slate-50">
+    <div className="md:flex h-screen  bg-slate-50">
       {/* Desktop sidebar */}
       <div className="hidden md:block">
         <Sidebar
@@ -176,11 +176,11 @@ export function Dashboard() {
           </div>
         </div>
       )}
-
+      <div className="h-14 md:h-0"></div>
       {/* Main area */}
       <div className="flex-1 overflow-hidden md:ml-0 md:relative">
         {/* Spacer for mobile topbar */}
-        <div className="md:hidden h-14" />
+        <div className="md:hidden md:h-14" />
         {currentView === "chat" ? (
           <ChatInterface
             sessionId={currentSessionId as any}

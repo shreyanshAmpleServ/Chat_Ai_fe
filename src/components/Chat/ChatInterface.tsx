@@ -166,6 +166,37 @@ export function ChatInterface({
     }
   };
 
+  /* === NEW: copy rendered HTML of assistant answer (keeps tables/images formatting) === */
+  const renderedRefs = useRef<Record<number, HTMLDivElement | null>>({});
+
+  async function copyRenderedHTML(messageId: number, key: string) {
+    const root = renderedRefs.current[messageId];
+    if (!root) {
+      toast.error("Nothing to copy");
+      return;
+    }
+    const target = root.querySelector("[data-copy='md']") as HTMLElement | null;
+    const node = target || root;
+    const html = node.innerHTML;
+    const text = node.innerText;
+
+    try {
+      if ("ClipboardItem" in window) {
+        const item = new (window as any).ClipboardItem({
+          "text/html": new Blob([html], { type: "text/html" }),
+          "text/plain": new Blob([text], { type: "text/plain" }),
+        });
+        await (navigator.clipboard as any).write([item]);
+      } else {
+        await navigator.clipboard.writeText(text);
+      }
+      markCopied(key);
+      toast.success("Copied HTML preview");
+    } catch {
+      toast.error("Copy failed");
+    }
+  }
+
   // ----- Load chat details from backend -----
   const {
     data: chatDetailsResp,
@@ -329,14 +360,31 @@ export function ChatInterface({
             const userTime = formatStamp(d.createdAt);
             const aiTime = formatStamp(d.updatedAt || d.createdAt);
             const sqlCopyKey = `sql-${d.id}`;
-            const answerCopyKey = `ans-${d.id}`;
+            const qCopyKey = `q-${d.id}`;
+            const ansHtmlCopyKey = `ans-${d.id}-html`;
 
             return (
               <div key={d.id} className="space-y-3 ">
                 {/* User bubble */}
                 <div className="flex justify-end  lg:my-6">
-                  <div className="max-w-3xl  min-w-0 rounded-2xl px-6 py-4 bg-gradient-to-r from-blue-600 to-blue-700 text-white">
-                    <p className="whitespace-pre-wrap leading-relaxed break-words">
+                  <div className="relative max-w-3xl  min-w-0 rounded-2xl px-6 py-4 pb-2.5 bg-gradient-to-r from-blue-600 to-blue-700 text-white">
+                    {/* NEW: Copy question button (same position style) */}
+                    <button
+                      onClick={() =>
+                        copyToClipboard(d.question || "", qCopyKey)
+                      }
+                      className="absolute right-4 bottom-1.5 inline-flex items-center gap-1 rounded-md border border-white/30 bg-white/10 px-2 py-1 text-xs hover:bg-white/20"
+                      title="Copy question"
+                      type="button"
+                    >
+                      {copiedKey === qCopyKey ? (
+                        <Check className="w-3.5 h-3.5" />
+                      ) : (
+                        <Copy className="w-3.5 h-3.5" />
+                      )}
+                    </button>
+
+                    <p className="whitespace-pre-wrap leading-relaxed break-words pr-14">
                       {d.question}
                     </p>
 
@@ -372,8 +420,8 @@ export function ChatInterface({
                     )}
 
                     {/* time */}
-                    <div className="mt-2 flex items-center gap-2 text-blue-100/90 text-xs">
-                      <Clock className="w-3.5 h-3.5" />
+                    <div className="mt-2 flex items-end mr-8 gap-2 text-blue-100/90 text-xs">
+                      {/* <Clock className="w-3.5 h-3.5" /> */}
                       <span>{userTime}</span>
                     </div>
                   </div>
@@ -381,27 +429,31 @@ export function ChatInterface({
 
                 {/* Assistant bubble */}
                 <div className="flex justify-start">
-                  <div className="relative max-w-3xl  min-w-0 rounded-2xl lg:px-3 lg:py-3  bg-slate-50 text-slate-800 border-2xl lg:border border-slate-200">
-                    {/* Copy whole answer */}
+                  <div
+                    className="relative max-w-3xl  min-w-0 rounded-2xl lg:px-3 lg:py-3  bg-slate-50 text-slate-800 border-2xl lg:border border-slate-200"
+                    ref={(el) => {
+                      renderedRefs.current[d.id] = el;
+                    }}
+                  >
+                    {/* NEW: Copy rendered HTML of answer (keeps tables/images) */}
                     <button
-                      onClick={() => copyToClipboard(d.aiAnswer, answerCopyKey)}
-                      className="absolute right-4 bottom-1.5  inline-flex items-center gap-1 hover:rounded-md hover:border hover:border-slate-300 hover:bg-white/80 px-2 py-1 text-xs text-slate-600 hover:bg-white hover:shadow-sm"
-                      title="Copy answer"
+                      onClick={() => copyRenderedHTML(d.id, ansHtmlCopyKey)}
+                      className="absolute right-4 bottom-1.5 inline-flex items-center gap-1 rounded-md border border-slate-300 bg-white/80 px-2 py-1 text-xs text-slate-700 hover:bg-white shadow-sm"
+                      title="Copy rendered HTML"
                       type="button"
                     >
-                      {copiedKey === answerCopyKey ? (
-                        <>
-                          <Check className="w-3.5 h-3.5" />
-                        </>
+                      {copiedKey === ansHtmlCopyKey ? (
+                        <Check className="w-3.5 h-3.5" />
                       ) : (
-                        <>
-                          <Copy className="w-3.5 h-3.5" />
-                        </>
+                        <Copy className="w-3.5 h-3.5" />
                       )}
                     </button>
 
                     {/* Markdown content */}
-                    <div className="max-w-full overflow-x-hidden">
+                    <div
+                      className="max-w-full overflow-x-hidden"
+                      data-copy="md"
+                    >
                       <article className="prose prose-slate max-w-none md-scroll">
                         <ReactMarkdown
                           remarkPlugins={[remarkGfm]}
@@ -430,10 +482,13 @@ export function ChatInterface({
                               />
                             ),
                             img: (props) => (
-                              <img {...props} className="md-img" />
+                              <div className="md-img-container">
+                                <img {...props} className="md-img" />
+                              </div>
                             ),
+
                             p: (props) => (
-                              <p className="md-table-wrap" {...props} />
+                              <p className="md-table-p" {...props} />
                             ),
                             code({
                               inline,

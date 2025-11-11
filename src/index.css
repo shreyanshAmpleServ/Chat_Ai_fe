@@ -43,49 +43,48 @@
   text-decoration: underline;
 }
 
-/* Make header sticky inside the scrolling region */
-.md-table thead th.md-th {
+/* Scroll container (the element that actually scrolls) */
+.md-table-wrap {
+  position: relative; /* anchor for sticky z-index */
+  width: 100%;
+  max-height: 90vh;
+  min-width: 180px;
+  overflow: auto; /* scrolling happens here */
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 0.25rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.75rem; /* rounded corners on the wrapper */
+  background: #fff;
+}
+.md-table-p {
+  position: relative; /* anchor for sticky z-index */
+  width: 100%;
+  max-height: 90vh;
+  min-width: 180px;
+  overflow: auto; /* scrolling happens here */
+  -webkit-overflow-scrolling: touch;
+  /* padding: 0.45rem; */
+  /* border: 1px solid #e5e7eb;
+  border-radius: 0.75rem; 
+  background: #fff; */
+}
+
+/* Table — DO NOT clip children (no overflow hidden) */
+.md-table {
+  width: auto; /* let content decide width; wrapper scrolls */
+  min-width: 180px;
+  margin: 0;
+  border-collapse: separate; /* sticky friendly */
+  border-spacing: 0;
+  table-layout: auto;
+  /* no border / radius here; wrapper has it */
+}
+
+/* Sticky header cells */
+.md-thead th.md-th {
   position: sticky;
   top: 0;
-  /* z-index: 1; */
-}
-
-/* Let the table be wider than the viewport so it can scroll */
-.md-table {
-  width: auto;
-  /* min-width: 640px; force horizontal scroll on very small screens */
-  table-layout: auto; /* better natural sizing for mixed content */
-}
-
-/* Improve wrapping so long tokens (like codes/URLs) don’t blow layout */
-.md-th,
-.md-td {
-  white-space: normal;
-  word-break: break-word;
-  overflow-wrap: anywhere;
-}
-
-/* Keep code blocks inside cells from expanding the row too much */
-.md-td pre,
-.md-td code {
-  /* max-width: 100%; */
-}
-
-/* --- Your original styles (kept) --- */
-
-/* Table base */
-.md-table {
-  border-collapse: separate;
-  border-spacing: 0;
-  margin: 0;
-  background: #ffffff;
-  border: 1px solid #e5e7eb; /* slate-200-ish */
-  border-radius: 0.75rem; /* rounded-xl */
-  overflow: hidden; /* clip rounded corners */
-}
-
-/* Header */
-.md-thead th.md-th {
+  z-index: 5; /* stay above body cells */
   background: #f1f5f9; /* slate-100 */
   font-weight: 500;
   text-align: left;
@@ -93,6 +92,7 @@
   border-bottom: 1px solid #e5e7eb;
   font-size: 0.87rem;
   white-space: nowrap;
+  box-shadow: 0 1px 0 #e5e7eb; /* subtle divider when stuck */
 }
 
 /* Body rows */
@@ -111,14 +111,61 @@
   font-size: 0.8rem;
 }
 
-/* Last row: remove bottom border */
+/* Last row */
 .md-tbody .md-tr:last-child .md-td {
   border-bottom: none;
 }
 
-/* Hover row */
+/* Hover */
 .md-tbody .md-tr:hover {
   background: #f6faff;
+}
+
+/* Wrapping: prevent long tokens from blowing layout */
+.md-th,
+.md-td {
+  white-space: normal;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+
+/* Optional: compact non-first columns; first column flexes */
+.md-table.md-tight-cols thead th.md-th:not(:first-child),
+.md-table.md-tight-cols tbody td.md-td:not(:first-child) {
+  width: 1%;
+  white-space: nowrap;
+  text-align: right;
+}
+.md-table.md-tight-cols thead th.md-th:first-child,
+.md-table.md-tight-cols tbody td.md-td:first-child {
+  width: auto;
+  max-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-align: left;
+}
+
+/* Images in markdown */
+.prose img,
+.md-img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
+.md-img {
+  width: 100%;
+  border-radius: 0.75rem;
+  margin: 1rem 0;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  border: 1px solid #e2e8f0;
+  object-fit: contain;
+}
+.md-img-container {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  padding: 0.5rem 0;
 }
 
 /* Keep app within viewport width */
@@ -130,123 +177,8 @@ body,
   overflow-x: hidden;
 }
 
-/* Images inside markdown should never exceed the container width */
-.prose img,
-.md-img {
-  max-width: 100%;
-  height: auto;
-  display: block;
-}
-
-/* === Responsive wrapper so tables scroll on small screens === */
-.md-table-wrap {
-  width: 100%;
-  max-height: 90vh;
-  min-width: 180px;
-  overflow: auto;
-  -webkit-overflow-scrolling: touch;
-  padding-bottom: 0.25rem; /* breathing room for scrollbars */
-}
-
-/* Table base */
-.md-table {
-  width: 100%;
-  min-width: 180px;
-  border-collapse: separate;
-  border-spacing: 0;
-  margin: 0;
-  background: #ffffff;
-  border: 1px solid #e5e7eb; /* slate-200-ish */
-  border-radius: 0.75rem; /* rounded-xl */
-  overflow: hidden; /* clip rounded corners */
-  table-layout: auto;
-}
-
-/* Header */
-.md-thead th.md-th {
-  background: #f1f5f9; /* slate-100 */
-  font-weight: 500;
-  text-align: left;
-  padding: 0.75rem 0.8rem;
-  border-bottom: 1px solid #e5e7eb;
-  font-size: 0.87rem;
-  white-space: nowrap;
-  position: sticky; /* keeps head visible while horizontal scroll */
-  top: 0;
-  /* z-index: 1; */
-}
-
-/* Body rows */
-.md-tbody .md-tr:nth-child(odd) {
-  background: #fafafa;
-}
-.md-tbody .md-tr:nth-child(even) {
-  background: #ffffff;
-}
-
-/* Cells */
-.md-td {
-  padding: 0.5rem 0.6rem;
-  border-bottom: 1px solid #eee;
-  vertical-align: top;
-  font-size: 0.8rem;
-}
-
-/* Last row: remove bottom border */
-.md-tbody .md-tr:last-child .md-td {
-  border-bottom: none;
-}
-
-/* Hover row */
-.md-tbody .md-tr:hover {
-  background: #f6faff;
-}
-
-/* Prevent long tokens (URLs/code) from blowing layout */
-.md-th,
-.md-td {
-  white-space: normal;
-  word-break: break-word;
-  overflow-wrap: anywhere;
-}
-/* Optional: link styling if you want */
-.md-link {
-  color: #2563eb;
-  text-decoration: underline;
-}
-.md-link:hover {
-  text-decoration: none;
-}
-
-/* Inline code */
-.md-code-inline {
-  background: #e5e7eb; /* slate-200 */
-  padding: 0.1rem 0.35rem;
-  border-radius: 0.375rem;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
-    "Liberation Mono", "Courier New", monospace;
-  font-size: 0.875em;
-}
-
-/* Code block */
-.md-code-block {
-  background: #0f172a; /* slate-900 */
-  color: #f8fafc; /* slate-50 */
-  padding: 0.875rem 1rem;
-  border-radius: 0.75rem;
-  overflow: auto;
-  line-height: 1.5;
-  margin: 0.75rem 0;
-  max-width: 100%; /* never exceed container */
-}
-
-/* === Mobile tweaks === */
+/* Mobile tweaks */
 @media (max-width: 640px) {
-  .md-table {
-    /* width: 100%; */
-    width: auto;
-    margin: 0;
-  }
   .md-th,
   .md-td {
     padding: 0.4rem 0.8rem;

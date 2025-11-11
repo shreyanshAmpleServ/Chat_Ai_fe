@@ -332,9 +332,9 @@ export function ChatInterface({
             const answerCopyKey = `ans-${d.id}`;
 
             return (
-              <div key={d.id} className="space-y-3">
+              <div key={d.id} className="space-y-3 ">
                 {/* User bubble */}
-                <div className="flex justify-end">
+                <div className="flex justify-end  lg:my-6">
                   <div className="max-w-3xl  min-w-0 rounded-2xl px-6 py-4 bg-gradient-to-r from-blue-600 to-blue-700 text-white">
                     <p className="whitespace-pre-wrap leading-relaxed break-words">
                       {d.question}
@@ -484,7 +484,7 @@ export function ChatInterface({
         )}
         <div ref={messagesEndRef} />
       </div>
-
+      <div className="h-14 md:h-20"></div>
       {/* Composer */}
       <div className="fixed md:absolute bottom-0 w-full">
         <div className="border-t border-slate-200 bg-white p-3 md:p-3 sticky bottom-0 z-10 [padding-bottom:env(safe-area-inset-bottom)]">
@@ -508,7 +508,7 @@ export function ChatInterface({
               </div>
             )}
 
-            <div className="flex  gap-2 z-50 pb-2.5 lg:mb-0 md:gap-3">
+            <div className="flex items-end  gap-2 z-50 pb-2.5 lg:mb-0 md:gap-3">
               <textarea
                 ref={textAreaRef}
                 value={input}
@@ -519,14 +519,14 @@ export function ChatInterface({
                     ? "Pick a category and ask your first question…"
                     : "Ask about your business data…"
                 }
-                className="flex-1 max-h-56 md:max-h-64 resize-none rounded-xl border border-slate-300 px-3 md:px-4 py-2.5 md:py-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all outline-none text-sm md:text-base"
+                className="scrollbar-hide flex-1 max-h-32 md:max-h-56 resize-none rounded-xl border border-slate-300 px-3 md:px-4 py-2.5 md:py-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all outline-none text-sm md:text-base"
                 rows={1}
                 disabled={sending}
               />
               <button
                 onClick={handleSend}
                 disabled={!input.trim() || sending}
-                className="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-4 md:px-6 py-3 rounded-xl font-medium hover:from-blue-700 hover:to-blue-800 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl flex items-center gap-2"
+                className="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-4 md:px-6 py-3 max-h-12 rounded-xl font-medium hover:from-blue-700 hover:to-blue-800 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl flex items-center gap-2"
               >
                 {sending ? (
                   <Loader2 className="w-5 h-5 animate-spin" />
@@ -536,7 +536,7 @@ export function ChatInterface({
                 <span className="hidden sm:inline">Send</span>
               </button>
             </div>
-            <p className="text-[11px] md:text-xs md:flex hidden justify-center text-slate-500 mt-2 text-center">
+            <p className="text-[11px] md:text-xs md:flex hidden justify-center text-slate-500  text-center">
               Press Enter to send, Shift + Enter for new line
             </p>
           </div>

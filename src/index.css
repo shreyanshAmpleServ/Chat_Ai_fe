@@ -71,7 +71,7 @@
 
 /* Table — DO NOT clip children (no overflow hidden) */
 .md-table {
-  width: auto; /* let content decide width; wrapper scrolls */
+  width: 100%; /* let content decide width; wrapper scrolls */
   min-width: 180px;
   margin: 0;
   border-collapse: separate; /* sticky friendly */

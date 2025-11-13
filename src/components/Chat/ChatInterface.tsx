@@ -15,6 +15,7 @@ import remarkGfm from "remark-gfm";
 import rehypeHighlight from "rehype-highlight";
 import "highlight.js/styles/github.css";
 import aiva from "../../assets/aiva.png";
+import rehypeRaw from "rehype-raw";
 
 /* =========================
    Date formatting helpers
@@ -84,6 +85,76 @@ function formatDatesInMarkdown(text: string): any {
   );
 
   return out;
+}
+function extractAndReplaceDataImages(md: string) {
+  if (!md) return md;
+
+  // Replace markdown images: ![alt](data:image/png;base64,AAAA...)
+  md = md.replace(
+    /!\[([^\]]*)\]\(\s*(data:image\/[a-zA-Z]+;base64,[^)]+)\s*\)/g,
+    (_match, alt, dataUri) => {
+      const cleaned = dataUri.trim();
+      if (cleaned.length < 50) return "";
+      return `<img alt="${alt || "chart"}" src="${cleaned}" />`;
+    }
+  );
+
+  // Replace inline HTML images (ensure valid self-closing)
+  md = md.replace(
+    /<img\s+([^>]*src=["']data:image\/[^>"']+["'][^>]*)>/gi,
+    (_match, attrs) => {
+      return `<img ${attrs}>`;
+    }
+  );
+
+  return md;
+}
+// Replace your existing extractAndReplaceDataImages with this function
+function normalizeDataImageTokens(md: string) {
+  if (!md) return { cleaned: md, imgs: [] as string[] };
+
+  // 1) Convert markdown images to HTML <img/> inline
+  md = md.replace(
+    /!\[([^\]]*)\]\(\s*(data:image\/[a-zA-Z0-9.+-]+;base64,[^)]+)\s*\)/g,
+    (_m, alt, dataUri) => {
+      const cleanedUri = dataUri.replace(/\s+/g, "");
+      const safeAlt = (alt || "chart").replace(/"/g, "&quot;");
+      return `<img alt="${safeAlt}" src="${cleanedUri}" />`;
+    }
+  );
+
+  // 2) Normalize inline <img ...> to self-closing <img ... />
+  md = md.replace(/<img\s+([^>]*?)>/gi, (_m, attrs) => `<img ${attrs} />`);
+
+  // 3) Now scan lines; if a line contains any <img ... /> (common: table row),
+  //    remove that line from the markdown and push the <img> HTML to imgs[]
+  const imgs: string[] = [];
+  const lines = md.split(/\r?\n/);
+  const kept: string[] = [];
+
+  for (const line of lines) {
+    // If the line contains '<img' treat it as an image-only line (or image-containing)
+    // Extract all <img ... /> occurrences
+    const matches = Array.from(
+      line.matchAll(/(<img\s+[^>]*src="[^"]+"[^>]*\/>)/gi)
+    ).map((m) => m[1]);
+
+    if (matches.length > 0) {
+      // collect images and skip adding this line to kept (removes table row)
+      matches.forEach((m) => {
+        // sanity-check length of src
+        const srcMatch = m.match(/src="([^"]+)"/i);
+        const src = srcMatch ? srcMatch[1] : "";
+        if (src && src.length > 50) imgs.push(m);
+      });
+      continue; // do not keep the line (removes the table row or cell)
+    }
+
+    kept.push(line);
+  }
+
+  const cleaned = kept.join("\n");
+  return { cleaned, imgs };
 }
 
 // Friendly timestamp (DD-MM-YYYY HH:MM)
@@ -191,7 +262,7 @@ export function ChatInterface({
         await navigator.clipboard.writeText(text);
       }
       markCopied(key);
-      toast.success("Copied HTML preview");
+      toast.success("Copied Successfully.");
     } catch {
       toast.error("Copy failed");
     }
@@ -356,7 +427,11 @@ export function ChatInterface({
           </div>
         ) : (
           details.map((d) => {
-            const formatted = formatDatesInMarkdown(d.aiAnswer);
+            const formattedDate = formatDatesInMarkdown(d.aiAnswer);
+            const { cleaned: formatted, imgs } =
+              normalizeDataImageTokens(formattedDate);
+            // const imgs = normalizeDataImageTokens(formattedDate)?.imgs;
+            // console.log("safeMarkdown preview: ", d?.id, formatted);
             const userTime = formatStamp(d.createdAt);
             const aiTime = formatStamp(d.updatedAt || d.createdAt);
             const sqlCopyKey = `sql-${d.id}`;
@@ -366,7 +441,7 @@ export function ChatInterface({
             return (
               <div key={d.id} className="space-y-3 ">
                 {/* User bubble */}
-                <div className="flex justify-end  lg:my-6">
+                <div className="flex justify-end  my-6">
                   <div className="relative max-w-3xl  min-w-0 rounded-2xl px-6 py-4 pb-2.5 bg-gradient-to-r from-blue-600 to-blue-700 text-white">
                     {/* NEW: Copy question button (same position style) */}
                     <button
@@ -457,7 +532,7 @@ export function ChatInterface({
                       <article className="prose prose-slate max-w-none md-scroll">
                         <ReactMarkdown
                           remarkPlugins={[remarkGfm]}
-                          rehypePlugins={[rehypeHighlight]}
+                          rehypePlugins={[rehypeRaw, rehypeHighlight]}
                           components={{
                             table: (props) => (
                               <div className="md-table-wrap">
@@ -471,8 +546,12 @@ export function ChatInterface({
                               <tbody className="md-tbody" {...props} />
                             ),
                             tr: (props) => <tr className="md-tr" {...props} />,
-                            th: (props) => <th className="md-th" {...props} />,
-                            td: (props) => <td className="md-td" {...props} />,
+                            th: (props) => (
+                              <th className="md-th !text-center" {...props} />
+                            ),
+                            td: (props) => (
+                              <td className="md-td !text-center" {...props} />
+                            ),
                             a: (props) => (
                               <a
                                 {...props}
@@ -481,12 +560,51 @@ export function ChatInterface({
                                 className="md-link"
                               />
                             ),
+                            // img: ({ src, alt, title }) => {
+
+                            //   // existing fallback if missing
+                            //   if (!src || src === "None" || src.trim() === "") {
+                            //     return (
+                            //       <span className="inline-block rounded px-1 py-0.5 text-xs text-slate-500 bg-slate-100/40">
+                            //         Image not available
+                            //       </span>
+                            //     );
+                            //   }
+                            //   if (!src || src === "None" || src.trim() === "") {
+                            //     return (
+                            //       <span className="inline-block rounded px-1 py-0.5 text-xs text-slate-500 bg-slate-100/40">
+                            //         Image not available
+                            //       </span>
+                            //     );
+                            //   }
+
+                            //   // const isData =
+                            //   //   typeof src === "string" &&
+                            //   //   src.startsWith("data:image/");
+                            //   let finalSrc = src;
+
+                            //   // OPTIONAL: if CSP blocks data:, uncomment this to convert to blob:
+                            //   // if (isData) finalSrc = base64ToBlobUrl(src);
+
+                            //   return (
+                            //     <img
+                            //       src={finalSrc}
+                            //       alt={alt ?? ""}
+                            //       title={title ?? ""}
+                            //       className="md-img max-w-full rounded inline-block"
+                            //       style={{
+                            //         display: "inline-block",
+                            //         maxWidth: "100%",
+                            //       }}
+                            //     />
+                            //   );
+                            // },
                             img: (props) => (
                               <div className="md-img-container">
-                                <img {...props} className="md-img" />
+                                {" "}
+                                <img {...props} className="md-img" />{" "}
                               </div>
                             ),
-
                             p: (props) => (
                               <p className="md-table-p" {...props} />
                             ),
@@ -512,6 +630,37 @@ export function ChatInterface({
                         >
                           {formatted}
                         </ReactMarkdown>
+                        {/* Render any extracted images below the markdown (kept out of tables) */}
+                        {imgs && imgs.length > 0 && (
+                          <div className="mt-1 flex flex-col gap-3">
+                            {imgs.map((imgHtml, i) => {
+                              // Prefer parsing the src/alt instead of dangerouslySetInnerHTML
+                              const srcMatch = imgHtml.match(/src="([^"]+)"/i);
+                              const altMatch = imgHtml.match(/alt="([^"]*)"/i);
+                              const src = srcMatch ? srcMatch[1] : "";
+                              const alt = altMatch ? altMatch[1] : `image-${i}`;
+
+                              // If you have CSP issues with data: URIs, convert here using base64ToBlobUrl(src)
+                              // const finalSrc = src.startsWith("data:") ? base64ToBlobUrl(src) : src;
+                              const finalSrc = src;
+
+                              return (
+                                <img
+                                  key={i}
+                                  src={finalSrc}
+                                  alt={alt}
+                                  className="max-w-full rounded border border-slate-200 shadow-sm"
+                                  style={{
+                                    display: "block",
+                                    width: "100%",
+                                    height: "auto",
+                                    objectFit: "contain",
+                                  }}
+                                />
+                              );
+                            })}
+                          </div>
+                        )}
                       </article>
                     </div>
 
@@ -526,7 +675,6 @@ export function ChatInterface({
             );
           })
         )}
-
         {sending && (
           <div className="flex justify-start">
             <div className="bg-slate-50 rounded-2xl px-6 py-4 border border-slate-200">

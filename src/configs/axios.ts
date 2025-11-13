@@ -84,10 +84,10 @@ const createAxiosInstance = (baseURL: string): AxiosInstance => {
           message: "Server error. Please try again later.",
         });
       }
-      console.log(
-        "API Error:",
-        (error?.response?.data as any)?.message || error.message
-      );
+      // console.log(
+      //   "API Error:",
+      //   (error?.response?.data as any)?.message || error.message
+      // );
       // Extract error message from response or use default
       const errorMessage =
         (error.response?.data as any)?.message ||

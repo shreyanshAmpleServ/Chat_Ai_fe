@@ -30,15 +30,35 @@ export const chatHistoryFn = async (params: {
  * @param {number} id - category id
  * @returns {Promise<Category>} - response data
  */
-export const chatDetailFn = async (id: number): Promise<any> => {
+// export const chatDetailFn = async (id: number): Promise<any> => {
+//   try {
+//     const response = await axiosInstance.get(`/chat-details/${id}`);
+//     return response.data;
+//   } catch (error) {
+//     throw error;
+//   }
+// };
+
+export const chatDetailFn = async (
+  id: number,
+  cursor?: string | number | null,
+  limit: number = 10
+): Promise<any> => {
   try {
-    const response = await axiosInstance.get(`/chat-details/${id}`);
+    const params: Record<string, any> = {};
+    if (cursor !== undefined && cursor !== null) params.cursor = cursor;
+    if (limit) params.limit = limit;
+
+    const response = await axiosInstance.get(`/chat-details/${id}`, {
+      params,
+    });
+
+    // return response.data directly — frontend will normalize legacy vs paginated shapes
     return response.data;
   } catch (error) {
     throw error;
   }
 };
-
 /**
  * Create category
  * @param {Category} body - category data

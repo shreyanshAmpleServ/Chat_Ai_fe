@@ -66,7 +66,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
     mutationFn: loginFn,
     onSuccess: (data) => {
       setUser(((data as any)?.data as any)?.user);
-      console.log("Login successful:", ((data as any)?.data as any)?.token);
+      // console.log("Login successful:", ((data as any)?.data as any)?.token);
       localStorage.setItem("auth_token", ((data as any)?.data as any)?.token);
       localStorage.setItem(
         "user",

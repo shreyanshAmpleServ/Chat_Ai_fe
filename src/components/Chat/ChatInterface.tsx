@@ -220,6 +220,15 @@ export function ChatInterface({
   const [input, setInput] = useState("");
   const [category, setCategory] = useState<string>("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement | null>(null);
+
+  // paginated state
+  const [messages, setMessages] = useState<ChatDetail[]>([]);
+  const [nextCursor, setNextCursor] = useState<string | number | null>(null);
+  const [hasMore, setHasMore] = useState<boolean>(false);
+  const [loadingInitial, setLoadingInitial] = useState<boolean>(false);
+  const [loadingOlder, setLoadingOlder] = useState<boolean>(false);
+  const PAGE_LIMIT = 10;
 
   // copy state for showing a tiny "Copied" check per message or sql block
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
@@ -356,6 +365,185 @@ export function ChatInterface({
     el.style.height = Math.min(el.scrollHeight, 6 * 24 + 32) + "px";
   }, [input]);
 
+  // normalize function to accept legacy and paginated responses
+  function normalizeResp(resp: any) {
+    // case A: legacy API returned { data: { ChatDetails: [...] } }
+    if (resp && resp.data && Array.isArray(resp.data.ChatDetails)) {
+      const arr = resp.data.ChatDetails as ChatDetail[];
+      // ensure chronological order (old->new)
+      const ordered = arr
+        .slice()
+        .sort(
+          (a, b) =>
+            new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+        );
+      return {
+        messages: ordered,
+        nextCursor: ordered.length ? ordered[0].id : null,
+        hasMore: false,
+      };
+    }
+
+    // case B: paginated API: { messages: [...], nextCursor, hasMore }
+    if (resp && Array.isArray(resp.messages)) {
+      return {
+        messages: resp.messages as ChatDetail[],
+        nextCursor: resp.nextCursor ?? null,
+        hasMore: !!resp.hasMore,
+      };
+    }
+
+    // fallback: try if resp is already an array
+    if (Array.isArray(resp)) {
+      const ordered = resp
+        .slice()
+        .sort(
+          (a: ChatDetail, b: ChatDetail) =>
+            new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+        );
+      return {
+        messages: ordered,
+        nextCursor: ordered.length ? ordered[0].id : null,
+        hasMore: false,
+      };
+    }
+
+    return { messages: [], nextCursor: null, hasMore: false };
+  }
+
+  // initial load
+  const fetchInitial = useCallback(async (sid?: string | null) => {
+    if (!sid) {
+      setMessages([]);
+      setNextCursor(null);
+      setHasMore(false);
+      return;
+    }
+    try {
+      setLoadingInitial(true);
+      const resp = await chatDetailFn(Number(sid), null, PAGE_LIMIT);
+      console.log("fetchInitial resp:", resp);
+      const {
+        messages: fetched,
+        nextCursor: nc,
+        hasMore: hm,
+      } = normalizeResp(resp);
+      console.log("fetchInitial normalized:", { fetched, nc, hm });
+      setMessages(fetched);
+      setNextCursor(nc ?? null);
+      setHasMore(Boolean(hm));
+      // scroll to bottom after initial load
+      requestAnimationFrame(() => {
+        const el = containerRef.current;
+        if (el) {
+          el.scrollTop = el.scrollHeight;
+        }
+      });
+    } catch (err) {
+      console.error("fetchInitial error", err);
+      toast.error("Failed to load conversation.");
+    } finally {
+      setLoadingInitial(false);
+    }
+  }, []);
+
+  // load older messages (cursor pagination)
+  const fetchOlder = useCallback(async () => {
+    if (!sessionId || !hasMore || loadingOlder || !nextCursor) return;
+    try {
+      setLoadingOlder(true);
+      const el = containerRef.current;
+      const prevScrollHeight = el ? el.scrollHeight : 0;
+
+      const resp = await chatDetailFn(
+        Number(sessionId),
+        nextCursor,
+        PAGE_LIMIT + 10
+      );
+      const {
+        messages: olderMsgs,
+        nextCursor: nc,
+        hasMore: hm,
+      } = normalizeResp(resp);
+
+      if (!olderMsgs || olderMsgs.length === 0) {
+        setHasMore(Boolean(hm));
+        setNextCursor(nc ?? null);
+        return;
+      }
+
+      setMessages((prev) => {
+        const ids = new Set(prev.map((m) => m.id));
+        const deduped = olderMsgs.filter((m) => !ids.has(m.id));
+        return [...deduped, ...prev];
+      });
+
+      // restore scroll position so viewport remains stable
+      requestAnimationFrame(() => {
+        const el2 = containerRef.current;
+        if (el2) {
+          const newScrollHeight = el2.scrollHeight;
+          el2.scrollTop = newScrollHeight - prevScrollHeight;
+        }
+      });
+
+      setNextCursor(nc ?? null);
+      setHasMore(Boolean(hm));
+    } catch (err) {
+      console.error("fetchOlder error", err);
+      toast.error("Failed to load older messages.");
+    } finally {
+      setLoadingOlder(false);
+    }
+  }, [sessionId, nextCursor, hasMore, loadingOlder]);
+
+  // load initial when sessionId changes
+  useEffect(() => {
+    fetchInitial(sessionId);
+    setCopiedKey(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sessionId]);
+
+  // // scroll listener to trigger loadOlder when near top
+  // useEffect(() => {
+  //   const el = containerRef.current;
+  //   if (!el) return;
+
+  //   let ticking = false;
+  //   const onScroll = () => {
+  //     if (ticking) return;
+  //     ticking = true;
+  //     requestAnimationFrame(() => {
+  //       if (el.scrollTop <= 120 && hasMore && !loadingOlder) {
+  //         fetchOlder();
+  //       }
+  //       ticking = false;
+  //     });
+  //   };
+
+  //   el.addEventListener("scroll", onScroll, { passive: true });
+  //   return () => el.removeEventListener("scroll", onScroll);
+  // }, [fetchOlder, hasMore, loadingOlder]);
+
+  // // auto-scroll behavior: if user is near bottom, scroll to bottom on new messages
+  // useEffect(() => {
+  //   const el = containerRef.current;
+  //   if (!el) return;
+  //   // console.log(
+  //   //   "Checking auto-scroll on new messages...",
+  //   //   el.scrollTop,
+  //   //   el.scrollHeight,
+  //   //   el.clientHeight
+  //   // );
+  //   const atBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 160;
+
+  //   if (atBottom) {
+  //     requestAnimationFrame(() => {
+  //       el.scrollTop = el.scrollHeight;
+  //     });
+  //   }
+  // }, [messages, sending]);
+  console.log("messages:", messages);
   return (
     <div className="h-full flex flex-col bg-white relative w-full max-w-[100vw] overflow-x-hidden">
       {/* Header */}
@@ -378,7 +566,11 @@ export function ChatInterface({
       </div>
 
       {/* Messages area */}
-      <div className="flex-1 relative overflow-y-auto p-4 md:p-6 space-y-4 md:space-y-6">
+      <div
+        ref={containerRef}
+        style={{ overscrollBehavior: "contain" }}
+        className="flex-1 relative overflow-y-auto p-4 md:p-6 space-y-4 md:space-y-6"
+      >
         {detailsLoading && (sessionId ? details.length === 0 : true) ? (
           <div className="flex justify-start">
             <div className="bg-slate-50 rounded-2xl px-6 py-4 border border-slate-200">
@@ -426,254 +618,281 @@ export function ChatInterface({
             </div>
           </div>
         ) : (
-          details.map((d) => {
-            const formattedDate = formatDatesInMarkdown(d.aiAnswer);
-            const { cleaned: formatted, imgs } =
-              normalizeDataImageTokens(formattedDate);
-            // const imgs = normalizeDataImageTokens(formattedDate)?.imgs;
-            // console.log("safeMarkdown preview: ", d?.id, formatted);
-            const userTime = formatStamp(d.createdAt);
-            const aiTime = formatStamp(d.updatedAt || d.createdAt);
-            const sqlCopyKey = `sql-${d.id}`;
-            const qCopyKey = `q-${d.id}`;
-            const ansHtmlCopyKey = `ans-${d.id}-html`;
-
-            return (
-              <div key={d.id} className="space-y-3 ">
-                {/* User bubble */}
-                <div className="flex justify-end  my-6">
-                  <div className="relative max-w-3xl  min-w-0 rounded-2xl px-6 py-4 pb-2.5 bg-gradient-to-r from-blue-600 to-blue-700 text-white">
-                    {/* NEW: Copy question button (same position style) */}
-                    <button
-                      onClick={() =>
-                        copyToClipboard(d.question || "", qCopyKey)
-                      }
-                      className="absolute right-4 bottom-1.5 inline-flex items-center gap-1 rounded-md border border-white/30 bg-white/10 px-2 py-1 text-xs hover:bg-white/20"
-                      title="Copy question"
-                      type="button"
-                    >
-                      {copiedKey === qCopyKey ? (
-                        <Check className="w-3.5 h-3.5" />
-                      ) : (
-                        <Copy className="w-3.5 h-3.5" />
-                      )}
-                    </button>
-
-                    <p className="whitespace-pre-wrap leading-relaxed break-words pr-14">
-                      {d.question}
-                    </p>
-
-                    {d.sql_code && (
-                      <div className="mt-3 pt-3 border-t border-blue-300/40">
-                        <div className="flex items-center justify-between gap-2">
-                          <p className="text-xs font-medium mb-2 text-blue-50">
-                            Generated SQL:
-                          </p>
-                          <button
-                            onClick={() =>
-                              copyToClipboard(d.sql_code || "", sqlCopyKey)
-                            }
-                            className="text-[11px] mb-2 inline-flex items-center gap-1 rounded-md border border-white/30 px-2 py-0.5 hover:bg-white/10"
-                            title="Copy SQL"
-                            type="button"
-                          >
-                            {copiedKey === sqlCopyKey ? (
-                              <>
-                                <Check className="w-3 h-3" /> Copied
-                              </>
-                            ) : (
-                              <>
-                                <Copy className="w-3 h-3" /> Copy
-                              </>
-                            )}
-                          </button>
-                        </div>
-                        <code className="text-xs bg-slate-800 text-slate-100 p-2 rounded block overflow-x-auto">
-                          {d.sql_code}
-                        </code>
-                      </div>
-                    )}
-
-                    {/* time */}
-                    <div className="mt-2 flex items-end mr-8 gap-2 text-blue-100/90 text-xs">
-                      {/* <Clock className="w-3.5 h-3.5" /> */}
-                      <span>{userTime}</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Assistant bubble */}
-                <div className="flex justify-start">
-                  <div
-                    className="relative max-w-3xl  min-w-0 rounded-2xl lg:px-3 lg:py-3  bg-slate-50 text-slate-800 border-2xl lg:border border-slate-200"
-                    ref={(el) => {
-                      renderedRefs.current[d.id] = el;
-                    }}
-                  >
-                    {/* NEW: Copy rendered HTML of answer (keeps tables/images) */}
-                    <button
-                      onClick={() => copyRenderedHTML(d.id, ansHtmlCopyKey)}
-                      className="absolute right-4 bottom-1.5 inline-flex items-center gap-1 rounded-md border border-slate-300 bg-white/80 px-2 py-1 text-xs text-slate-700 hover:bg-white shadow-sm"
-                      title="Copy rendered HTML"
-                      type="button"
-                    >
-                      {copiedKey === ansHtmlCopyKey ? (
-                        <Check className="w-3.5 h-3.5" />
-                      ) : (
-                        <Copy className="w-3.5 h-3.5" />
-                      )}
-                    </button>
-
-                    {/* Markdown content */}
-                    <div
-                      className="max-w-full overflow-x-hidden"
-                      data-copy="md"
-                    >
-                      <article className="prose prose-slate max-w-none md-scroll">
-                        <ReactMarkdown
-                          remarkPlugins={[remarkGfm]}
-                          rehypePlugins={[rehypeRaw, rehypeHighlight]}
-                          components={{
-                            table: (props) => (
-                              <div className="md-table-wrap">
-                                <table className="md-table" {...props} />
-                              </div>
-                            ),
-                            thead: (props) => (
-                              <thead className="md-thead" {...props} />
-                            ),
-                            tbody: (props) => (
-                              <tbody className="md-tbody" {...props} />
-                            ),
-                            tr: (props) => <tr className="md-tr" {...props} />,
-                            th: (props) => (
-                              <th className="md-th !text-center" {...props} />
-                            ),
-                            td: (props) => (
-                              <td className="md-td !text-center" {...props} />
-                            ),
-                            a: (props) => (
-                              <a
-                                {...props}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="md-link"
-                              />
-                            ),
-                            // img: ({ src, alt, title }) => {
-
-                            //   // existing fallback if missing
-                            //   if (!src || src === "None" || src.trim() === "") {
-                            //     return (
-                            //       <span className="inline-block rounded px-1 py-0.5 text-xs text-slate-500 bg-slate-100/40">
-                            //         Image not available
-                            //       </span>
-                            //     );
-                            //   }
-                            //   if (!src || src === "None" || src.trim() === "") {
-                            //     return (
-                            //       <span className="inline-block rounded px-1 py-0.5 text-xs text-slate-500 bg-slate-100/40">
-                            //         Image not available
-                            //       </span>
-                            //     );
-                            //   }
-
-                            //   // const isData =
-                            //   //   typeof src === "string" &&
-                            //   //   src.startsWith("data:image/");
-                            //   let finalSrc = src;
-
-                            //   // OPTIONAL: if CSP blocks data:, uncomment this to convert to blob:
-                            //   // if (isData) finalSrc = base64ToBlobUrl(src);
-
-                            //   return (
-                            //     <img
-                            //       src={finalSrc}
-                            //       alt={alt ?? ""}
-                            //       title={title ?? ""}
-                            //       className="md-img max-w-full rounded inline-block"
-                            //       style={{
-                            //         display: "inline-block",
-                            //         maxWidth: "100%",
-                            //       }}
-                            //     />
-                            //   );
-                            // },
-                            img: (props) => (
-                              <div className="md-img-container">
-                                {" "}
-                                <img {...props} className="md-img" />{" "}
-                              </div>
-                            ),
-                            p: (props) => (
-                              <p className="md-table-p" {...props} />
-                            ),
-                            code({
-                              inline,
-                              children,
-                              ...props
-                            }: {
-                              inline?: boolean;
-                              children?: React.ReactNode;
-                            } & any) {
-                              return inline ? (
-                                <code className="md-code-inline" {...props}>
-                                  {children}
-                                </code>
-                              ) : (
-                                <pre className="md-code-block">
-                                  <code {...props}>{children}</code>
-                                </pre>
-                              );
-                            },
-                          }}
-                        >
-                          {formatted}
-                        </ReactMarkdown>
-                        {/* Render any extracted images below the markdown (kept out of tables) */}
-                        {imgs && imgs.length > 0 && (
-                          <div className="mt-1 flex flex-col gap-3">
-                            {imgs.map((imgHtml, i) => {
-                              // Prefer parsing the src/alt instead of dangerouslySetInnerHTML
-                              const srcMatch = imgHtml.match(/src="([^"]+)"/i);
-                              const altMatch = imgHtml.match(/alt="([^"]*)"/i);
-                              const src = srcMatch ? srcMatch[1] : "";
-                              const alt = altMatch ? altMatch[1] : `image-${i}`;
-
-                              // If you have CSP issues with data: URIs, convert here using base64ToBlobUrl(src)
-                              // const finalSrc = src.startsWith("data:") ? base64ToBlobUrl(src) : src;
-                              const finalSrc = src;
-
-                              return (
-                                <img
-                                  key={i}
-                                  src={finalSrc}
-                                  alt={alt}
-                                  className="max-w-full rounded border border-slate-200 shadow-sm"
-                                  style={{
-                                    display: "block",
-                                    width: "100%",
-                                    height: "auto",
-                                    objectFit: "contain",
-                                  }}
-                                />
-                              );
-                            })}
-                          </div>
-                        )}
-                      </article>
-                    </div>
-
-                    {/* time */}
-                    <div className="mb-2 lg:mb-0 mt-3 md:mt-2 flex items-center gap-2 text-slate-500 text-xs">
-                      {/* <Clock className="w-3.5 ml-2 h-3.5" /> */}
-                      <span>{aiTime}</span>
-                    </div>
-                  </div>
+          <>
+            {/* Optionally show "load older" indicator */}
+            {loadingOlder && (
+              <div className="flex justify-center">
+                <div className="bg-slate-50 rounded-full px-3 py-2 border border-slate-200 text-xs text-slate-600">
+                  <Loader2 className="w-3.5 h-3.5 animate-spin inline-block mr-2" />
+                  Loading older messages...
                 </div>
               </div>
-            );
-          })
+            )}
+
+            {/* <div className="flex justify-center">
+              <div
+                onClick={() => fetchOlder()}
+                className="bg-slate-50 rounded-full px-3 py-2 border border-slate-200 text-xs text-slate-600"
+              >
+                Click here to get older messages...
+              </div>
+            </div> */}
+
+            {messages.map((d) => {
+              const formattedDate = formatDatesInMarkdown(d.aiAnswer);
+              const { cleaned: formatted, imgs } =
+                normalizeDataImageTokens(formattedDate);
+              // const imgs = normalizeDataImageTokens(formattedDate)?.imgs;
+              // console.log("safeMarkdown preview: ", d?.id, formatted);
+              const userTime = formatStamp(d.createdAt);
+              const aiTime = formatStamp(d.updatedAt || d.createdAt);
+              const sqlCopyKey = `sql-${d.id}`;
+              const qCopyKey = `q-${d.id}`;
+              const ansHtmlCopyKey = `ans-${d.id}-html`;
+
+              return (
+                <div key={d.id} className="space-y-3 ">
+                  {/* User bubble */}
+                  <div className="flex justify-end  my-6">
+                    <div className="relative max-w-3xl  min-w-0 rounded-2xl px-6 py-4 pb-2.5 bg-gradient-to-r from-blue-600 to-blue-700 text-white">
+                      {/* NEW: Copy question button (same position style) */}
+                      <button
+                        onClick={() =>
+                          copyToClipboard(d.question || "", qCopyKey)
+                        }
+                        className="absolute right-4 bottom-1.5 inline-flex items-center gap-1 rounded-md border border-white/30 bg-white/10 px-2 py-1 text-xs hover:bg-white/20"
+                        title="Copy question"
+                        type="button"
+                      >
+                        {copiedKey === qCopyKey ? (
+                          <Check className="w-3.5 h-3.5" />
+                        ) : (
+                          <Copy className="w-3.5 h-3.5" />
+                        )}
+                      </button>
+
+                      <p className="whitespace-pre-wrap leading-relaxed break-words pr-14">
+                        {d.question}
+                      </p>
+
+                      {d.sql_code && (
+                        <div className="mt-3 pt-3 border-t border-blue-300/40">
+                          <div className="flex items-center justify-between gap-2">
+                            <p className="text-xs font-medium mb-2 text-blue-50">
+                              Generated SQL:
+                            </p>
+                            <button
+                              onClick={() =>
+                                copyToClipboard(d.sql_code || "", sqlCopyKey)
+                              }
+                              className="text-[11px] mb-2 inline-flex items-center gap-1 rounded-md border border-white/30 px-2 py-0.5 hover:bg-white/10"
+                              title="Copy SQL"
+                              type="button"
+                            >
+                              {copiedKey === sqlCopyKey ? (
+                                <>
+                                  <Check className="w-3 h-3" /> Copied
+                                </>
+                              ) : (
+                                <>
+                                  <Copy className="w-3 h-3" /> Copy
+                                </>
+                              )}
+                            </button>
+                          </div>
+                          <code className="text-xs bg-slate-800 text-slate-100 p-2 rounded block overflow-x-auto">
+                            {d.sql_code}
+                          </code>
+                        </div>
+                      )}
+
+                      {/* time */}
+                      <div className="mt-2 flex items-end mr-8 gap-2 text-blue-100/90 text-xs">
+                        {/* <Clock className="w-3.5 h-3.5" /> */}
+                        <span>{userTime}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Assistant bubble */}
+                  <div className="flex justify-start">
+                    <div
+                      className="relative max-w-3xl  min-w-0 rounded-2xl lg:px-3 lg:py-3  bg-slate-50 text-slate-800 border-2xl lg:border border-slate-200"
+                      ref={(el) => {
+                        renderedRefs.current[d.id] = el;
+                      }}
+                    >
+                      {/* NEW: Copy rendered HTML of answer (keeps tables/images) */}
+                      <button
+                        onClick={() => copyRenderedHTML(d.id, ansHtmlCopyKey)}
+                        className="absolute right-4 bottom-1.5 inline-flex items-center gap-1 rounded-md border border-slate-300 bg-white/80 px-2 py-1 text-xs text-slate-700 hover:bg-white shadow-sm"
+                        title="Copy rendered HTML"
+                        type="button"
+                      >
+                        {copiedKey === ansHtmlCopyKey ? (
+                          <Check className="w-3.5 h-3.5" />
+                        ) : (
+                          <Copy className="w-3.5 h-3.5" />
+                        )}
+                      </button>
+
+                      {/* Markdown content */}
+                      <div
+                        className="max-w-full overflow-x-hidden"
+                        data-copy="md"
+                      >
+                        <article className="prose prose-slate max-w-none md-scroll">
+                          <ReactMarkdown
+                            remarkPlugins={[remarkGfm]}
+                            rehypePlugins={[rehypeRaw, rehypeHighlight]}
+                            components={{
+                              table: (props) => (
+                                <div className="md-table-wrap">
+                                  <table className="md-table" {...props} />
+                                </div>
+                              ),
+                              thead: (props) => (
+                                <thead className="md-thead" {...props} />
+                              ),
+                              tbody: (props) => (
+                                <tbody className="md-tbody" {...props} />
+                              ),
+                              tr: (props) => (
+                                <tr className="md-tr" {...props} />
+                              ),
+                              th: (props) => (
+                                <th className="md-th !text-center" {...props} />
+                              ),
+                              td: (props) => (
+                                <td className="md-td !text-center" {...props} />
+                              ),
+                              a: (props) => (
+                                <a
+                                  {...props}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="md-link"
+                                />
+                              ),
+                              // img: ({ src, alt, title }) => {
+
+                              //   // existing fallback if missing
+                              //   if (!src || src === "None" || src.trim() === "") {
+                              //     return (
+                              //       <span className="inline-block rounded px-1 py-0.5 text-xs text-slate-500 bg-slate-100/40">
+                              //         Image not available
+                              //       </span>
+                              //     );
+                              //   }
+                              //   if (!src || src === "None" || src.trim() === "") {
+                              //     return (
+                              //       <span className="inline-block rounded px-1 py-0.5 text-xs text-slate-500 bg-slate-100/40">
+                              //         Image not available
+                              //       </span>
+                              //     );
+                              //   }
+
+                              //   // const isData =
+                              //   //   typeof src === "string" &&
+                              //   //   src.startsWith("data:image/");
+                              //   let finalSrc = src;
+
+                              //   // OPTIONAL: if CSP blocks data:, uncomment this to convert to blob:
+                              //   // if (isData) finalSrc = base64ToBlobUrl(src);
+
+                              //   return (
+                              //     <img
+                              //       src={finalSrc}
+                              //       alt={alt ?? ""}
+                              //       title={title ?? ""}
+                              //       className="md-img max-w-full rounded inline-block"
+                              //       style={{
+                              //         display: "inline-block",
+                              //         maxWidth: "100%",
+                              //       }}
+                              //     />
+                              //   );
+                              // },
+                              img: (props) => (
+                                <div className="md-img-container">
+                                  {" "}
+                                  <img {...props} className="md-img" />{" "}
+                                </div>
+                              ),
+                              p: (props) => (
+                                <p className="md-table-p" {...props} />
+                              ),
+                              code({
+                                inline,
+                                children,
+                                ...props
+                              }: {
+                                inline?: boolean;
+                                children?: React.ReactNode;
+                              } & any) {
+                                return inline ? (
+                                  <code className="md-code-inline" {...props}>
+                                    {children}
+                                  </code>
+                                ) : (
+                                  <pre className="md-code-block">
+                                    <code {...props}>{children}</code>
+                                  </pre>
+                                );
+                              },
+                            }}
+                          >
+                            {formatted}
+                          </ReactMarkdown>
+                          {/* Render any extracted images below the markdown (kept out of tables) */}
+                          {imgs && imgs.length > 0 && (
+                            <div className="mt-1 flex flex-col gap-3">
+                              {imgs.map((imgHtml, i) => {
+                                // Prefer parsing the src/alt instead of dangerouslySetInnerHTML
+                                const srcMatch =
+                                  imgHtml.match(/src="([^"]+)"/i);
+                                const altMatch =
+                                  imgHtml.match(/alt="([^"]*)"/i);
+                                const src = srcMatch ? srcMatch[1] : "";
+                                const alt = altMatch
+                                  ? altMatch[1]
+                                  : `image-${i}`;
+
+                                // If you have CSP issues with data: URIs, convert here using base64ToBlobUrl(src)
+                                // const finalSrc = src.startsWith("data:") ? base64ToBlobUrl(src) : src;
+                                const finalSrc = src;
+
+                                return (
+                                  <img
+                                    key={i}
+                                    src={finalSrc}
+                                    alt={alt}
+                                    className="max-w-full rounded border border-slate-200 shadow-sm"
+                                    style={{
+                                      display: "block",
+                                      width: "100%",
+                                      height: "auto",
+                                      objectFit: "contain",
+                                    }}
+                                  />
+                                );
+                              })}
+                            </div>
+                          )}
+                        </article>
+                      </div>
+
+                      {/* time */}
+                      <div className="mb-2 lg:mb-0 mt-3 md:mt-2 flex items-center gap-2 text-slate-500 text-xs">
+                        {/* <Clock className="w-3.5 ml-2 h-3.5" /> */}
+                        <span>{aiTime}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </>
         )}
         {sending && (
           <div className="flex justify-start">

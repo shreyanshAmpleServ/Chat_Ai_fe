@@ -45,9 +45,16 @@ export const chatDetailFn = async (
   limit: number = 10
 ): Promise<any> => {
   try {
-    const params: Record<string, any> = {};
-    if (cursor !== undefined && cursor !== null) params.cursor = cursor;
-    if (limit) params.limit = limit;
+    const safeLimit = Math.max(1, Math.min(Number(limit) || 20, 50));
+    // Build query params for the paginated API
+    const params: Record<string, any> = { limit: safeLimit };
+    if (cursor !== undefined && cursor !== null && cursor !== "") {
+      params.beforeId = cursor;
+    }
+
+    // const params: Record<string, any> = {};
+    // if (cursor !== undefined && cursor !== null) params.cursor = cursor;
+    // if (limit) params.limit = limit;
 
     const response = await axiosInstance.get(`/chat-details/${id}`, {
       params,

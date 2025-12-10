@@ -1,16 +1,19 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import SpeechRecognition, {
   useSpeechRecognition,
 } from "react-speech-recognition";
-import { Mic } from "lucide-react";
+import { Mic, X } from "lucide-react";
 
 type Props = {
   value: string;
   setValue: (v: string) => void;
   disabled?: boolean;
   language?: string;
+  appendMode?: boolean;
+  autoCapitalize?: boolean;
+  autoStopAfterSilenceMs?: number;
 };
 
 export function VoiceButton({
@@ -18,79 +21,101 @@ export function VoiceButton({
   setValue,
   disabled = false,
   language = "en-IN",
+  appendMode = true,
+  autoCapitalize = true,
+  autoStopAfterSilenceMs = 2500,
 }: Props) {
+  const nativeSRAvailable = useMemo(() => {
+    const w = typeof window !== "undefined" ? (window as any) : {};
+    return !!(w.SpeechRecognition || w.webkitSpeechRecognition);
+  }, []);
+
   const {
     transcript,
     listening,
     browserSupportsSpeechRecognition,
     resetTranscript,
   } = useSpeechRecognition();
+
   const [showModal, setShowModal] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  // live-fill only while listening
-  useEffect(() => {
-    if (listening) setValue(transcript);
-  }, [transcript, listening, setValue]);
+  const autoCaps = (text: string) => {
+    if (!autoCapitalize) return text;
+    const cleaned = text.replace(/\s+/g, " ").trim();
+    return cleaned.replace(/(^\s*[a-z])|([.!?]\s+[a-z])/g, (m) =>
+      m.toUpperCase()
+    );
+  };
+
+  const joinWithSpace = (a: string, b: string) => {
+    if (!a) return b;
+    if (!b) return a;
+    return `${a}${/\s$/.test(a) || /^\s/.test(b) ? "" : " "}${b}`;
+  };
+
+  const baseAtStartRef = useRef<string>("");
+  const appendedSoFarRef = useRef<string>("");
+  const lastTranscriptAtRef = useRef<number>(0);
 
   useEffect(() => {
-    (async () => {
-      // 1) Support + secure origin
-      console.log(
-        "[voice] support?",
-        SpeechRecognition.browserSupportsSpeechRecognition?.()
+    if (!listening) return;
+
+    if (transcript && transcript.length !== appendedSoFarRef.current.length) {
+      lastTranscriptAtRef.current = Date.now();
+    }
+
+    if (!appendMode) {
+      setValue(autoCaps(transcript));
+      return;
+    }
+
+    const newPart = transcript.slice(appendedSoFarRef.current.length);
+    if (newPart.trim().length > 0) {
+      appendedSoFarRef.current += newPart;
+      const combined = joinWithSpace(
+        baseAtStartRef.current,
+        appendedSoFarRef.current
       );
-      console.log("[voice] isSecureContext?", window.isSecureContext);
-      console.log("[voice] top-level?", window.top === window.self);
+      setValue(autoCaps(combined));
+    }
+  }, [transcript, listening]);
 
-      // 2) Permissions-Policy detection: try querying mic permission (no prompt)
-      if ("permissions" in navigator && (navigator as any).permissions?.query) {
-        try {
-          const status = await (navigator as any).permissions.query({
-            name: "microphone" as PermissionName,
-          });
-          console.log("[voice] mic permission state:", status.state); // "granted" | "prompt" | "denied"
-        } catch (e) {
-          console.warn(
-            "[voice] permissions.query failed (often due to Permissions-Policy):",
-            e
-          );
-        }
-      } else {
-        console.log("[voice] Permissions API not available");
+  useEffect(() => {
+    if (!listening || autoStopAfterSilenceMs <= 0) return;
+
+    const id = window.setInterval(() => {
+      const now = Date.now();
+      const idleFor = now - lastTranscriptAtRef.current;
+      if (idleFor >= autoStopAfterSilenceMs) {
+        stop();
       }
+    }, 300);
 
-      // 3) Optional: tiny probe for getUserMedia to surface header/iframe blocks (don’t keep stream)
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          audio: true,
-        });
-        stream.getTracks().forEach((t) => t.stop());
-        console.log("[voice] getUserMedia OK");
-      } catch (err: any) {
-        console.warn("[voice] getUserMedia error:", err?.name, err?.message);
-        // NotAllowedError with no prompt often = blocked by header / iframe / denied permission
-      }
-    })();
-  }, []);
+    return () => window.clearInterval(id);
+  }, [listening, autoStopAfterSilenceMs]);
 
-  const start = async () => {
+  const start = () => {
     setErrorMsg(null);
 
-    // Guards that commonly differ in prod
-    if (!browserSupportsSpeechRecognition) {
+    if (!browserSupportsSpeechRecognition || !nativeSRAvailable) {
       setErrorMsg("Voice recognition not supported in this browser.");
       return;
     }
     if (!window.isSecureContext) {
-      setErrorMsg("Microphone requires HTTPS in production.");
+      setErrorMsg("Microphone requires HTTPS (localhost is okay).");
       return;
     }
 
     try {
+      baseAtStartRef.current = value;
+      appendedSoFarRef.current = "";
+      lastTranscriptAtRef.current = Date.now();
+
       resetTranscript();
       setShowModal(true);
-      await SpeechRecognition.startListening({
+
+      SpeechRecognition.startListening({
         continuous: true,
         interimResults: true,
         language,
@@ -102,52 +127,258 @@ export function VoiceButton({
   };
 
   const stop = () => {
-    SpeechRecognition.stopListening();
-    setShowModal(false);
-    if (transcript?.trim()) setValue(transcript.trim());
+    try {
+      SpeechRecognition.stopListening();
+    } finally {
+      setShowModal(false);
+
+      const finalChunk = transcript.trim();
+      if (!finalChunk) return;
+
+      if (appendMode) {
+        const combined = joinWithSpace(baseAtStartRef.current, finalChunk);
+        setValue(autoCaps(combined));
+      } else {
+        setValue(autoCaps(finalChunk));
+      }
+    }
   };
 
   return (
     <>
+      <style>{`
+        @keyframes modalFadeIn {
+          from {
+            opacity: 0;
+            transform: scale(0.95);
+          }
+          to {
+            opacity: 1;
+            transform: scale(1);
+          }
+        }
+
+        @keyframes backdropFadeIn {
+          from {
+            opacity: 0;
+          }
+          to {
+            opacity: 1;
+          }
+        }
+
+        @keyframes ripple {
+          0% {
+            transform: scale(1);
+            opacity: 0.6;
+          }
+          100% {
+            transform: scale(2.5);
+            opacity: 0;
+          }
+        }
+
+        @keyframes pulse {
+          0%, 100% {
+            transform: scale(1);
+            opacity: 1;
+          }
+          50% {
+            transform: scale(1.05);
+            opacity: 0.8;
+          }
+        }
+
+        @keyframes float {
+          0%, 100% {
+            transform: translateY(0px);
+          }
+          50% {
+            transform: translateY(-8px);
+          }
+        }
+
+        @keyframes slideUp {
+          from {
+            transform: translateY(10px);
+            opacity: 0;
+          }
+          to {
+            transform: translateY(0);
+            opacity: 1;
+          }
+        }
+
+        @keyframes textGlow {
+          0%, 100% {
+            text-shadow: 0 0 10px rgba(239, 68, 68, 0.3);
+          }
+          50% {
+            text-shadow: 0 0 20px rgba(239, 68, 68, 0.6);
+          }
+        }
+
+        .modal-container {
+          animation: backdropFadeIn 0.3s ease-out;
+        }
+
+        .modal-content {
+          animation: modalFadeIn 0.3s ease-out;
+        }
+
+        .ripple-circle {
+          animation: ripple 2s infinite;
+        }
+
+        .ripple-circle:nth-child(2) {
+          animation-delay: 0.4s;
+        }
+
+        .ripple-circle:nth-child(3) {
+          animation-delay: 0.8s;
+        }
+
+        .pulse-icon {
+          animation: pulse 2s ease-in-out infinite;
+        }
+
+        .float-animation {
+          animation: float 3s ease-in-out infinite;
+        }
+
+        .slide-up {
+          animation: slideUp 0.4s ease-out forwards;
+        }
+
+        .text-glow {
+          animation: textGlow 2s ease-in-out infinite;
+        }
+
+        .wave-bar {
+          animation: waveHeight 1.2s ease-in-out infinite;
+        }
+
+        @keyframes waveHeight {
+          0%, 100% {
+            height: 20%;
+          }
+          50% {
+            height: 100%;
+          }
+        }
+
+        .wave-bar:nth-child(1) {
+          animation-delay: 0s;
+        }
+        .wave-bar:nth-child(2) {
+          animation-delay: 0.1s;
+        }
+        .wave-bar:nth-child(3) {
+          animation-delay: 0.2s;
+        }
+        .wave-bar:nth-child(4) {
+          animation-delay: 0.3s;
+        }
+        .wave-bar:nth-child(5) {
+          animation-delay: 0.4s;
+        }
+      `}</style>
+
       <button
         type="button"
         onClick={start}
-        disabled={disabled}
-        className={`px-3 py-2 rounded max-h-12 ${
-          listening ? "bg-red-500 text-white" : "bg-gray-200"
-        } disabled:opacity-50`}
+        disabled={disabled || !browserSupportsSpeechRecognition}
+        className={`px-4 md:px-6 py-3 rounded-xl shadow flex items-center justify-center transition-all duration-300 hover:scale-105 active:scale-95
+          ${
+            listening
+              ? "bg-blue-600 text-white"
+              : "bg-gray-200 hover:bg-gray-300"
+          }
+          disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100`}
         title="Start voice input"
       >
-        <Mic className="w-5 lg:w-6 h-5 lg:h-6" />
+        <Mic className="w-5 h-5 lg:w-6 lg:h-6" />
       </button>
 
-      {errorMsg && <div className="text-xs text-red-600 mt-1">{errorMsg}</div>}
+      {errorMsg && (
+        <p className="text-xs text-red-600 mt-1 slide-up">{errorMsg}</p>
+      )}
 
       {showModal && (
         <div
-          className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40"
+          className="modal-container fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[9999] px-4"
           onClick={stop}
+          role="dialog"
+          aria-modal="true"
         >
           <div
-            className="bg-white rounded-2xl p-5 w-[90%] max-w-sm shadow-2xl"
+            className="modal-content bg-gradient-to-br from-white to-blue-50 p-8 rounded-3xl w-full max-w-md shadow-2xl border-2 border-blue-100"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="font-semibold text-lg">Listening…</div>
-            <p className="mt-2 text-sm text-slate-600">
-              Speak now. Click Stop when done.
-            </p>
-            <div className="mt-3 p-3 rounded-lg bg-slate-50 border text-sm max-h-32 overflow-auto">
-              {transcript || (
-                <span className="text-slate-400">Waiting for speech…</span>
-              )}
-            </div>
-            <div className="mt-4 flex justify-end">
+            {/* Close button */}
+            <button
+              onClick={stop}
+              className="absolute top-4 right-4 p-2 rounded-full bg-blue-100 hover:bg-blue-200 transition-colors"
+              aria-label="Close"
+            >
+              <X className="w-5 h-5 text-blue-600" />
+            </button>
+
+            {/* Animated mic icon with ripples */}
+            <div className="flex flex-col items-center gap-6">
+              <div className="relative w-32 h-32 flex items-center justify-center float-animation">
+                {/* Ripple effects */}
+                <span className="ripple-circle absolute inset-0 rounded-full bg-blue-400 opacity-0" />
+                <span className="ripple-circle absolute inset-0 rounded-full bg-blue-400 opacity-0" />
+                <span className="ripple-circle absolute inset-0 rounded-full bg-blue-400 opacity-0" />
+
+                {/* Main mic circle */}
+                <div className="pulse-icon relative w-24 h-24 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-lg shadow-blue-300">
+                  <Mic className="w-12 h-12 text-white" />
+                </div>
+              </div>
+
+              {/* Listening text */}
+              <div className="text-center">
+                <h2 className="text-2xl font-bold text-gray-800 text-glow">
+                  Listening...
+                </h2>
+                <p className="mt-2 text-sm text-gray-600 slide-up">
+                  Speak clearly into your microphone
+                </p>
+              </div>
+
+              {/* Audio wave visualization */}
+              {/* <div className="flex items-center justify-center gap-1.5 h-12">
+                {[...Array(5)].map((_, i) => (
+                  <div
+                    key={i}
+                    className="wave-bar w-1.5 bg-gradient-to-t from-blue-600 to-blue-400 rounded-full"
+                  />
+                ))}
+              </div> */}
+
+              {/* Live transcript preview */}
+              <div className="w-full slide-up">
+                <div className="p-4 rounded-2xl bg-white/80 backdrop-blur border border-blue-100 shadow-inner min-h-[100px] max-h-40 overflow-auto">
+                  {transcript ? (
+                    <p className="text-sm text-gray-800 leading-relaxed">
+                      {transcript}
+                    </p>
+                  ) : (
+                    <p className="text-sm text-gray-400 italic">
+                      Waiting for speech...
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              {/* Stop button */}
               <button
-                type="button"
                 onClick={stop}
-                className="px-3 py-2 rounded bg-red-600 text-white hover:bg-red-700"
+                className="w-full mt-2 px-6 py-3.5 bg-gradient-to-r from-blue-600 to-blue-700 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl hover:from-blue-700 hover:to-red-800 transition-all duration-300 active:scale-95"
               >
-                Stop
+                Stop Recording
               </button>
             </div>
           </div>

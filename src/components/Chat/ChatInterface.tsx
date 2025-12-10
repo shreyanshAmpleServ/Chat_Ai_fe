@@ -1025,8 +1025,11 @@ export function ChatInterface({
               <VoiceButton
                 value={input}
                 setValue={setInput}
-                language="en-IN" // change if you want
-                disabled={sending} // optional
+                language="en-IN"
+                appendMode={true} // keeps previous content, appends voice
+                autoCapitalize={true} // capitalizes sentences
+                autoStopAfterSilenceMs={5000} // auto-stop after 2.5s of silence
+                disabled={sending}
               />
               <button
                 onClick={handleSend}

@@ -16,7 +16,7 @@ import rehypeHighlight from "rehype-highlight";
 import "highlight.js/styles/github.css";
 import aiva from "../../assets/aiva.png";
 import rehypeRaw from "rehype-raw";
-import VoiceCaptureButton from "../voiceRecognisation";
+import { VoiceButton } from "../voiceRecognisation";
 
 /* =========================
    Date & markdown helpers
@@ -1022,7 +1022,7 @@ export function ChatInterface({
                 rows={1}
                 disabled={sending}
               />
-              <VoiceCaptureButton
+              <VoiceButton
                 value={input}
                 setValue={setInput}
                 language="en-IN" // change if you want

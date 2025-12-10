@@ -4,6 +4,8 @@ import { useAuth } from "../../contexts/AuthContext";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { deleteChatHistoryFn } from "../../services/chatHistory";
 import { DeleteConfirmation } from "../DeleteConfirmation";
+import aiva from "../../Assets/aiva-light.png";
+import aiva2 from "../../Assets/aiva.png";
 
 interface SidebarProps {
   currentView: "chat" | "integrations";
@@ -75,13 +77,15 @@ export function Sidebar({
     >
       <div className="p-4 border-b border-slate-800 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="bg-white p-1 rounded-lg">
-            <img
+          {/* <div className="bg-white "> */}
+          {/* <img
               src="https://demo.dcclogsuite.com/ng/1.1/assets/images/ai_logo.png"
               alt="Logo"
               className="w-7 h-7"
-            />
-          </div>
+            /> */}
+          {/* <img src={aiva} alt="Logo" className="w-7 h-7" /> */}
+          <img src={aiva2} alt="Logo" className="w-10 h-10 rounded-lg" />
+          {/* </div> */}
           <div className="flex-1 min-w-0">
             <h2 className="font-semibold text-sm truncate">AI Assistant</h2>
             <p className="text-xs text-slate-400 truncate">{user?.company}</p>
@@ -111,7 +115,7 @@ export function Sidebar({
       </div>
 
       <nav className="flex-1 overflow-y-auto px-3 space-y-1">
-        <button
+        {/* <button
           onClick={() => onViewChange("chat")}
           className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${
             currentView === "chat"
@@ -121,7 +125,7 @@ export function Sidebar({
         >
           <MessageSquare className="w-4 h-4" />
           <span className="text-sm font-medium">Conversations</span>
-        </button>
+        </button> */}
 
         {currentView === "chat" && sessions.length > 0 && (
           <div className="pt-4 mt-2 border-t border-slate-800">

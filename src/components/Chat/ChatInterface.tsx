@@ -822,7 +822,7 @@ export function ChatInterface({
           overscrollBehavior: "contain",
           WebkitOverflowScrolling: "touch", // momentum scrolling on iOS
         }}
-        className="flex-1 min-h-0 relative overflow-y-auto p-4 md:p-6 space-y-4 md:space-y-6"
+        className="flex-1 min-h-0 relative overflow-y-auto p-4 md:p-6 !pt-0 space-y-4 "
       >
         {/* Top sentinel to trigger loading older pages */}
         <div ref={topSentinelRef} style={{ height: 1 }} />
@@ -837,8 +837,8 @@ export function ChatInterface({
             </div>
           </div>
         ) : messages.length === 0 ? (
-          <div className="h-full flex items-center justify-center">
-            <div className="max-w-2xl mx-auto text-center space-y-6">
+          <div className="h-full flex items-center justify-center mt-0">
+            <div className="max-w-2xl mx-auto text-center ">
               <div className="bg-gradient-to-br from-blue-50 to-slate-50 rounded-2xl p-8 border border-blue-100">
                 <Sparkles className="w-12 h-12 text-blue-600 mx-auto mb-4" />
                 <h3 className="text-xl font-semibold text-slate-800 mb-3">

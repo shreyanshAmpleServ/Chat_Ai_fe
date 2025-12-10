@@ -90,11 +90,11 @@ export function Dashboard() {
   }, [showDraft, draftSession, sessions]);
 
   // --- Auto-select most recent real session if none selected and no draft ---
-  useEffect(() => {
-    if (!showDraft && !currentSessionId && sessions.length > 0) {
-      setCurrentSessionId(sessions[0].id);
-    }
-  }, [showDraft, sessions, currentSessionId]);
+  // useEffect(() => {
+  //   if (!showDraft && !currentSessionId && sessions.length > 0) {
+  //     setCurrentSessionId(sessions[0].id);
+  //   }
+  // }, [showDraft, sessions, currentSessionId]);
 
   // --- Start a new chat ---
   const handleNewChat = useCallback(() => {

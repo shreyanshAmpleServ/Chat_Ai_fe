@@ -82,7 +82,7 @@ export function LoginPage() {
           </div>
 
           <div className="p-8">
-            <div className="flex gap-2 mb-6 bg-slate-100 p-1 rounded-lg">
+            {/* <div className="flex gap-2 mb-6 bg-slate-100 p-1 rounded-lg">
               <button
                 onClick={() => setIsLogin(true)}
                 className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-all ${
@@ -103,7 +103,7 @@ export function LoginPage() {
               >
                 Sign Up
               </button>
-            </div>
+            </div> */}
 
             <form onSubmit={handleSubmit} className="space-y-4">
               {!isLogin && (

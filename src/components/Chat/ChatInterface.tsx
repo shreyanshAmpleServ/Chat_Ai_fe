@@ -612,6 +612,7 @@ export function ChatInterface({
   useEffect(() => {
     if (sessionId) setCategory("");
     setCopiedKey(null);
+    setInput("");
     fetchInitial(sessionId, true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sessionId]);

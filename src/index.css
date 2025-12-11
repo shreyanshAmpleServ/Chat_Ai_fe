@@ -84,7 +84,7 @@
 .md-thead th.md-th {
   position: sticky;
   top: 0;
-  z-index: 5; /* stay above body cells */
+  /* z-index: 1; stay above body cells */
   background: #f1f5f9; /* slate-100 */
   font-weight: 500;
   text-align: left;

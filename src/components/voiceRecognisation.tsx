@@ -173,7 +173,7 @@ export function VoiceButton({
             opacity: 0.6;
           }
           100% {
-            transform: scale(2.5);
+            transform: scale(2);
             opacity: 0;
           }
         }
@@ -306,37 +306,36 @@ export function VoiceButton({
 
       {showModal && (
         <div
-          className="modal-container fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[9999] px-4"
+          className="modal-container z-50 fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center  px-4"
           onClick={stop}
           role="dialog"
           aria-modal="true"
         >
           <div
-            className="modal-content bg-gradient-to-br from-white to-blue-50 p-8 rounded-3xl w-full max-w-md shadow-2xl border-2 border-blue-100"
+            className="modal-content relative z-50 bg-gradient-to-br from-white to-blue-50 p-8 rounded-3xl w-full max-w-md shadow-2xl border-2 border-blue-100"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Close button */}
             <button
               onClick={stop}
-              className="absolute top-4 right-4 p-2 rounded-full bg-blue-100 hover:bg-blue-200 transition-colors"
+              className="absolute top-4 right-4 p-2 rounded-full bg-red-100 hover:bg-red-200 transition-colors"
               aria-label="Close"
             >
-              <X className="w-5 h-5 text-blue-600" />
+              <X className="w-5 h-5 text-red-600" />
             </button>
 
             {/* Animated mic icon with ripples */}
             <div className="flex flex-col items-center gap-6">
-              <div className="relative w-32 h-32 flex items-center justify-center float-animation">
-                {/* Ripple effects */}
+              {/* <div className="relative w-32 h-32 flex items-center justify-center float-animation">
+            
                 <span className="ripple-circle absolute inset-0 rounded-full bg-blue-400 opacity-0" />
                 <span className="ripple-circle absolute inset-0 rounded-full bg-blue-400 opacity-0" />
                 <span className="ripple-circle absolute inset-0 rounded-full bg-blue-400 opacity-0" />
 
-                {/* Main mic circle */}
                 <div className="pulse-icon relative w-24 h-24 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-lg shadow-blue-300">
                   <Mic className="w-12 h-12 text-white" />
                 </div>
-              </div>
+              </div> */}
 
               {/* Listening text */}
               <div className="text-center">
@@ -349,14 +348,14 @@ export function VoiceButton({
               </div>
 
               {/* Audio wave visualization */}
-              {/* <div className="flex items-center justify-center gap-1.5 h-12">
+              <div className="flex items-center justify-center gap-1.5 h-12">
                 {[...Array(5)].map((_, i) => (
                   <div
                     key={i}
                     className="wave-bar w-1.5 bg-gradient-to-t from-blue-600 to-blue-400 rounded-full"
                   />
                 ))}
-              </div> */}
+              </div>
 
               {/* Live transcript preview */}
               <div className="w-full slide-up">

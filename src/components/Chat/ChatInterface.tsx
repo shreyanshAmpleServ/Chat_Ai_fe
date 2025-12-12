@@ -1023,7 +1023,7 @@ export function ChatInterface({
                 rows={1}
                 disabled={sending}
               />
-              <VoiceButton
+              {/* <VoiceButton
                 value={input}
                 setValue={setInput}
                 language="en-IN"
@@ -1031,7 +1031,7 @@ export function ChatInterface({
                 autoCapitalize={true} // capitalizes sentences
                 autoStopAfterSilenceMs={5000} // auto-stop after 2.5s of silence
                 disabled={sending}
-              />
+              /> */}
               <button
                 onClick={handleSend}
                 disabled={!input.trim() || sending}

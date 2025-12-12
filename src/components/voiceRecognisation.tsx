@@ -288,7 +288,7 @@ export function VoiceButton({
         type="button"
         onClick={start}
         disabled={disabled || !browserSupportsSpeechRecognition}
-        className={`px-4 md:px-6 py-3 rounded-xl shadow flex items-center justify-center transition-all duration-300 hover:scale-105 active:scale-95
+        className={`px-4  md:px-6 py-3 rounded-xl shadow items-center justify-center transition-all duration-300 hover:scale-105 active:scale-95
           ${
             listening
               ? "bg-blue-600 text-white"
